@@ -1,3 +1,12 @@
+export interface Status {
+  id: string;
+  imageUrl: string;
+  timestamp: string;
+  caption?: string;
+  createdAt: string;
+  fileName: string;
+}
+
 export interface MessagePreview {
   type: 'image' | 'document';
   name: string;
@@ -12,13 +21,6 @@ export interface Message {
   sent: boolean;
   status?: "sent" | "delivered" | "read";
   preview?: MessagePreview;
-}
-
-export interface Status {
-  id: number;
-  imageUrl: string;
-  timestamp: string;
-  caption?: string;
 }
 
 export interface Chat {
@@ -41,23 +43,3 @@ export interface UserProfile {
   about: string;
   statuses?: Status[];
 }
-
-// Initial states for immediate loading
-export const initialAdminProfile: UserProfile = {
-  name: "WhatsApp Support",
-  image: "https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Favatar.png?alt=media&token=54132d01-d241-429a-b131-1be8951406b7",
-  about: "Official WhatsApp Support",
-  statuses: []
-};
-
-export const initialChat: Chat = {
-  id: "",
-  name: "",
-  phoneNumber: "",
-  lastMessage: "",
-  time: "",
-  unread: 0,
-  avatar: "https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Favatar.png?alt=media&token=54132d01-d241-429a-b131-1be8951406b7",
-  online: false,
-  messages: []
-};

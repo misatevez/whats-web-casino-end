@@ -13,7 +13,7 @@ interface StatusViewerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   statuses: Status[];
-  onReply?: (statusId: number, reply: string, imageUrl: string) => void;
+  onReply?: (statusId: string, reply: string, imageUrl: string) => void;
 }
 
 export function StatusViewerDialog({

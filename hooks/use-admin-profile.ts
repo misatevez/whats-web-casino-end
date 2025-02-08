@@ -8,84 +8,54 @@ export function useAdminProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
   const loadProfile = async () => {
     try {
-      console.log('🔵 Loading admin profile');
-      setIsLoading(true);
+      console.log('🔵 useAdminProfile: Starting profile load');
       const data = await getAdminProfile();
-      console.log('✅ Admin profile loaded:', data);
+      console.log('🔵 useAdminProfile: Profile data received:', {
+        name: data.name,
+        about: data.about,
+        statusesCount: data.statuses?.length,
+        statuses: data.statuses
+      });
       setProfile(data);
+      console.log('✅ useAdminProfile: Profile loaded and state updated');
     } catch (error) {
-      console.error('❌ Error loading profile:', error);
+      console.error('❌ useAdminProfile: Error loading profile:', error);
       toast.error('Failed to load admin profile');
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!profile) {
-      console.error('❌ Cannot update profile: No profile loaded');
+      console.error('❌ useAdminProfile: Cannot update profile: No profile loaded');
       return;
     }
     
     try {
-      console.log('🔵 Starting profile update with:', updates);
+      console.log('🔵 useAdminProfile: Starting profile update with:', updates);
       setIsSaving(true);
       
       // Update in Firebase
       await updateAdminProfile(updates);
-      console.log('✅ Firebase update successful');
+      console.log('✅ useAdminProfile: Firebase update successful');
       
       // Update local state
       const updatedProfile = { ...profile, ...updates };
       setProfile(updatedProfile);
       
       toast.success('Profile updated successfully');
-      console.log('✅ Profile update complete');
+      console.log('✅ useAdminProfile: Profile update complete');
       return true;
     } catch (error) {
-      console.error('❌ Error updating profile:', error);
+      console.error('❌ useAdminProfile: Error updating profile:', error);
       toast.error('Failed to update profile');
-      
-      // Reload profile to ensure UI shows correct data
-      await loadProfile();
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const updateProfileImage = async (file: File) => {
-    if (!profile) {
-      console.error('❌ Cannot update profile image: No profile loaded');
-      return;
-    }
-    
-    try {
-      console.log('🔵 Starting profile image update');
-      setIsSaving(true);
-      
-      // Upload image and get URL
-      const imageUrl = await uploadAdminProfileImage(file);
-      console.log('✅ Image uploaded successfully:', imageUrl);
-      
-      // Update profile with new image URL
-      await updateAdminProfile({ image: imageUrl });
-      
-      // Update local state
-      setProfile({ ...profile, image: imageUrl });
-      
-      toast.success('Profile image updated successfully');
-      console.log('✅ Profile image update complete');
-      return true;
-    } catch (error) {
-      console.error('❌ Error updating profile image:', error);
-      toast.error('Failed to update profile image');
       
       // Reload profile to ensure UI shows correct data
       await loadProfile();
@@ -100,6 +70,6 @@ export function useAdminProfile() {
     isLoading,
     isSaving,
     updateProfile,
-    updateProfileImage
+    loadProfile
   };
 }

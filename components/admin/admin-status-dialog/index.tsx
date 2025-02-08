@@ -13,7 +13,7 @@ interface AdminStatusDialogProps {
   onOpenChange: (open: boolean) => void;
   statuses: Status[];
   onStatusUpload?: (file: File, caption?: string) => void;
-  onStatusDelete?: (statusId: number) => void;
+  onStatusDelete?: (statusId: string) => void;
   viewOnly?: boolean;
 }
 

@@ -8,6 +8,7 @@ export async function getAdminProfile(): Promise<UserProfile> {
   try {
     console.log('🔵 Getting admin profile from Firebase');
     const profileRef = doc(db, 'admin/profile');
+    console.log('Lo que obtenemos: ', profileRef);
     const profileDoc = await getDoc(profileRef);
     
     if (!profileDoc.exists()) {
@@ -26,19 +27,24 @@ export async function getAdminProfile(): Promise<UserProfile> {
 
     const data = profileDoc.data();
     
-    // Get statuses
+    // Get statuses with document IDs
+    console.log('🔵 Getting statuses from admin/profile/statuses');
     const statusesRef = collection(db, 'admin/profile/statuses');
-    const statusesQuery = query(statusesRef, orderBy('timestamp', 'desc'));
+    const statusesQuery = query(statusesRef, orderBy('createdAt', 'desc'));
     const statusesSnapshot = await getDocs(statusesQuery);
     
+    console.log('🔵 Raw statuses data:', statusesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    
     const statuses: Status[] = statusesSnapshot.docs.map(doc => ({
-      id: parseInt(doc.id),
+      id: doc.id,
       imageUrl: doc.data().imageUrl,
       timestamp: doc.data().timestamp,
-      caption: doc.data().caption
+      caption: doc.data().caption,
+      createdAt: doc.data().createdAt,
+      fileName: doc.data().fileName
     }));
 
-    console.log('✅ Profile retrieved successfully:', { ...data, statuses });
+    console.log('✅ Profile retrieved successfully with statuses:', { ...data, statuses });
     return {
       name: data.name || "WhatsApp Support",
       image: data.image || "https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Favatar.png?alt=media&token=54132d01-d241-429a-b131-1be8951406b7",
@@ -54,30 +60,13 @@ export async function getAdminProfile(): Promise<UserProfile> {
 // Update admin profile
 export async function updateAdminProfile(updates: Partial<UserProfile>): Promise<void> {
   try {
-    console.log('🔵 Starting admin profile update in Firebase with:', updates);
+    console.log('🔵 Updating admin profile:', updates);
     const profileRef = doc(db, 'admin/profile');
-    const profileDoc = await getDoc(profileRef);
-    
-    const updateData: Record<string, any> = {
+    await updateDoc(profileRef, {
       ...updates,
       updatedAt: new Date()
-    };
-
-    if (!profileDoc.exists()) {
-      console.log('🔵 Creating new profile with updates');
-      await setDoc(profileRef, {
-        name: updates.name || "WhatsApp Support",
-        image: updates.image || "https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Favatar.png?alt=media&token=54132d01-d241-429a-b131-1be8951406b7",
-        about: updates.about || "Official WhatsApp Support",
-        createdAt: new Date(),
-        ...updateData
-      });
-    } else {
-      console.log('🔵 Updating existing profile');
-      await updateDoc(profileRef, updateData);
-    }
-    
-    console.log('✅ Admin profile updated successfully in Firebase');
+    });
+    console.log('✅ Admin profile updated successfully');
   } catch (error) {
     console.error('❌ Error updating admin profile:', error);
     throw error;
@@ -96,10 +85,13 @@ export async function uploadAdminProfileImage(file: File): Promise<string> {
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
     
+    // Update profile with new image URL
+    await updateAdminProfile({ image: downloadURL });
+    
     console.log('✅ Profile image uploaded successfully:', downloadURL);
     return downloadURL;
   } catch (error) {
-    console.error('❌ Error uploading admin profile image:', error);
+    console.error('❌ Error uploading profile image:', error);
     throw error;
   }
 }
@@ -123,8 +115,8 @@ export async function uploadAdminStatus(file: File, caption?: string): Promise<S
       imageUrl,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       caption,
-      fileName, // Guardamos el nombre del archivo para poder eliminarlo después
-      createdAt: new Date()
+      fileName,
+      createdAt: new Date().toISOString()
     };
     
     console.log('🔵 Creating status document with data:', statusData);
@@ -132,10 +124,8 @@ export async function uploadAdminStatus(file: File, caption?: string): Promise<S
     
     console.log('✅ Status uploaded successfully:', { id: docRef.id, ...statusData });
     return {
-      id: parseInt(docRef.id),
-      imageUrl,
-      timestamp: statusData.timestamp,
-      caption
+      id: docRef.id,
+      ...statusData
     };
   } catch (error) {
     console.error('❌ Error uploading admin status:', error);
@@ -144,12 +134,12 @@ export async function uploadAdminStatus(file: File, caption?: string): Promise<S
 }
 
 // Delete admin status
-export async function deleteAdminStatus(statusId: number): Promise<void> {
+export async function deleteAdminStatus(statusId: string): Promise<void> {
   try {
     console.log('🔵 Starting admin status deletion for ID:', statusId);
     
-    // Obtener el documento del estado para obtener el nombre del archivo
-    const statusRef = doc(db, 'admin/profile/statuses', statusId.toString());
+    // Get the status document to get the file name
+    const statusRef = doc(db, 'admin/profile/statuses', statusId);
     console.log('🔵 Getting status document');
     const statusDoc = await getDoc(statusRef);
     
@@ -157,7 +147,7 @@ export async function deleteAdminStatus(statusId: number): Promise<void> {
       const { fileName, imageUrl } = statusDoc.data();
       console.log('🔵 Status document found:', { fileName, imageUrl });
       
-      // Eliminar la imagen del storage si existe fileName
+      // Delete the image from storage if fileName exists
       if (fileName) {
         console.log('🔵 Deleting image from storage:', fileName);
         const storageRef = ref(storage, fileName);
@@ -166,11 +156,11 @@ export async function deleteAdminStatus(statusId: number): Promise<void> {
           console.log('✅ Image deleted from storage successfully');
         } catch (storageError) {
           console.error('❌ Error deleting image from storage:', storageError);
-          // Continuamos con la eliminación del documento aunque falle la eliminación de la imagen
+          // Continue with document deletion even if image deletion fails
         }
       }
       
-      // Eliminar el documento del estado
+      // Delete the status document
       console.log('🔵 Deleting status document');
       await deleteDoc(statusRef);
       console.log('✅ Status document deleted successfully');

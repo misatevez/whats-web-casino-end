@@ -34,7 +34,7 @@ export function useStatusManagement(adminData: UserProfile, setAdminData: (data:
     }
   };
 
-  const handleStatusDelete = async (statusId: number) => {
+  const handleStatusDelete = async (statusId: string) => {
     try {
       await deleteAdminStatus(statusId);
       

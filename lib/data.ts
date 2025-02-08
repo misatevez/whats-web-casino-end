@@ -22,10 +22,12 @@ export async function getAdminProfile(): Promise<UserProfile> {
     const statusesSnapshot = await getDocs(statusesQuery);
     
     const statuses: Status[] = statusesSnapshot.docs.map(doc => ({
-      id: parseInt(doc.id),
+      id: doc.id,
       imageUrl: doc.data().imageUrl,
       timestamp: doc.data().timestamp,
-      caption: doc.data().caption
+      caption: doc.data().caption,
+      createdAt: doc.data().createdAt,
+      fileName: doc.data().fileName
     }));
 
     return {

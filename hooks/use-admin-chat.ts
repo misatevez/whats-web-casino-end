@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Chat, UserProfile, initialAdminProfile } from "@/lib/types";
+import { Chat, UserProfile } from "@/lib/types";
 import { useAdminProfile } from "./use-admin-profile";
 import { useChatSubscription } from "./use-chat-subscription";
 

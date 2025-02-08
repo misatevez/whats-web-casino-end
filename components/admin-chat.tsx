@@ -2,168 +2,177 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Users } from "lucide-react";
-import { AdminHeader } from "@/components/admin/admin-header";
-import { AdminChatList } from "@/components/admin/admin-chat-list";
-import { AdminChatView } from "@/components/admin/admin-chat-view";
-import { AdminProfileDialog } from "@/components/admin/admin-profile-dialog";
-import { AdminContactDialog } from "@/components/admin/admin-contact-dialog";
-import { getAdminProfile, subscribeToChats } from "@/lib/data";
-import { Chat, UserProfile, initialAdminProfile } from "@/lib/types";
+import { useAdminProfile } from "@/hooks/use-admin-profile";
+import { useChatSubscription } from "@/hooks/use-chat-subscription";
+import { useMessageSearch } from "@/hooks/use-message-search";
+import { ChatHeader } from "@/components/chat/chat-header";
+import { MessageList } from "@/components/chat/message-list";
+import { MessageInput } from "@/components/chat/message-input";
+import { MessageSearchHeader } from "@/components/chat/message-search-header";
+import { UserSettingsDialog } from "@/components/chat/user-settings-dialog";
+import { ImageViewerDialog } from "@/components/chat/image-viewer-dialog";
+import { StatusViewerDialog } from "@/components/chat/status-viewer-dialog";
+import { FirebaseService } from "@/lib/services/firebase-service";
+import { MessagePreview } from "@/lib/types";
 
 export default function AdminChat() {
   const router = useRouter();
-  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showContactInfo, setShowContactInfo] = useState(false);
-  const [showProfileSettings, setShowProfileSettings] = useState(false);
-  const [adminData, setAdminData] = useState<UserProfile>(initialAdminProfile);
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
+  const { profile: adminProfile, updateProfile } = useAdminProfile();
+  const { chats, isLoading } = useChatSubscription();
+  const currentChat = chats[0] || null;
+  const [firebaseService, setFirebaseService] = useState<FirebaseService | null>(null);
+  
   useEffect(() => {
-    // Load admin profile
-    const loadAdminProfile = async () => {
-      try {
-        const profile = await getAdminProfile();
-        setAdminData(profile);
-      } catch (error) {
-        console.error('Error loading admin profile:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadAdminProfile();
+    setFirebaseService(FirebaseService.getInstance());
   }, []);
 
+  const {
+    showSearch,
+    messageSearchTerm,
+    selectedMessageIndex,
+    filteredMessages,
+    setShowSearch,
+    setMessageSearchTerm,
+    handleSearchClose,
+    handleNext,
+    handlePrevious
+  } = useMessageSearch(currentChat?.messages || []);
+
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [showStatusViewer, setShowStatusViewer] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
   useEffect(() => {
-    const unsubscribe = subscribeToChats((updatedChats) => {
-      setChats(updatedChats);
-      
-      // Update selected chat if it exists
-      if (selectedChat) {
-        const updatedSelectedChat = updatedChats.find(chat => chat.id === selectedChat.id);
-        if (updatedSelectedChat) {
-          setSelectedChat(updatedSelectedChat);
+    if (currentChat && firebaseService) {
+      const setOnlineStatus = async () => {
+        try {
+          await firebaseService.updateOnlineStatus(currentChat.id, true);
+        } catch (error) {
+          console.error('Error updating online status:', error);
         }
-      }
-    });
+      };
+
+      setOnlineStatus();
+      
+      const handleBeforeUnload = () => {
+        firebaseService.updateOnlineStatus(currentChat.id, false).catch(console.error);
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        firebaseService.updateOnlineStatus(currentChat.id, false).catch(console.error);
+      };
+    }
+  }, [currentChat?.id, firebaseService]);
+
+  // Fix for Safari viewport height
+  useEffect(() => {
+    const setViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
 
     return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      window.removeEventListener('resize', setViewportHeight);
+      window.removeEventListener('orientationchange', setViewportHeight);
     };
-  }, [selectedChat]);
+  }, []);
 
-  const handleLogout = () => {
-    router.push("/admin");
-  };
-
-  const handleSaveContact = (chat: Chat) => {
-    return false;
-  };
-
-  const filteredChats = chats.filter(chat => 
-    chat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.lastMessage.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (isLoading) {
+  if (isLoading || !adminProfile) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#111b21]">
-        <p className="text-[#e9edef]">Loading...</p>
+      <div className="flex items-center justify-center min-h-screen bg-[#111b21]">
+        <div className="text-[#e9edef]">Loading...</div>
       </div>
     );
   }
 
-  return (
-    <div className="flex h-screen bg-[#111b21]">
-      {/* Left Sidebar */}
-      <div className="w-[400px] border-r border-[#202c33] flex flex-col lg:block hidden">
-        <AdminHeader
-          profile={adminData}
-          onProfileClick={() => setShowProfileSettings(true)}
-          onLogout={handleLogout}
-        />
-
-        {/* Search and Tabs */}
-        <Tabs defaultValue="chats" className="w-full">
-          <TabsList className="w-full bg-[#202c33] rounded-none">
-            <TabsTrigger 
-              value="chats" 
-              className="flex-1 text-[#aebac1] data-[state=active]:text-[#00a884] data-[state=active]:bg-[#2a3942]"
-            >
-              <MessageCircle className="h-5 w-5 mr-2" />
-              Chats
-            </TabsTrigger>
-            <TabsTrigger 
-              value="contacts" 
-              className="flex-1 text-[#aebac1] data-[state=active]:text-[#00a884] data-[state=active]:bg-[#2a3942]"
-            >
-              <Users className="h-5 w-5 mr-2" />
-              Contacts
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="chats" className="m-0">
-            <AdminChatList
-              chats={filteredChats}
-              selectedChatId={selectedChat?.id}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              onChatSelect={setSelectedChat}
-              onSaveContact={handleSaveContact}
-            />
-          </TabsContent>
-
-          <TabsContent value="contacts" className="m-0">
-            <AdminChatList
-              chats={filteredChats}
-              selectedChatId={selectedChat?.id}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              onChatSelect={setSelectedChat}
-              onSaveContact={handleSaveContact}
-              showAbout
-            />
-          </TabsContent>
-        </Tabs>
+  if (!currentChat) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#111b21]">
+        <div className="text-center text-[#e9edef]">
+          <h2 className="text-2xl mb-4">Starting chat...</h2>
+          <p className="text-[#8696a0]">Please wait while the conversation loads.</p>
+        </div>
       </div>
+    );
+  }
 
-      {/* Main Chat Area */}
-      {selectedChat ? (
-        <AdminChatView
-          chat={selectedChat}
-          onInfoClick={() => setShowContactInfo(true)}
+  const handleSendMessage = async (content: string, preview: MessagePreview | null) => {
+    if ((!content.trim() && !preview) || !firebaseService) return;
+    try {
+      await firebaseService.sendMessage(currentChat.id, content, preview, false);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  const handleStatusReply = (statusId: string, reply: string, imageUrl: string) => {
+    handleSendMessage(reply, {
+      type: 'image',
+      name: 'Status Reply',
+      url: imageUrl
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-screen chat-container bg-[#111b21] overflow-hidden">
+      {showSearch ? (
+        <MessageSearchHeader
+          searchTerm={messageSearchTerm}
+          onSearchChange={setMessageSearchTerm}
+          onClose={handleSearchClose}
+          filteredMessages={filteredMessages}
+          selectedIndex={selectedMessageIndex}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
         />
       ) : (
-        <div className="flex-1 hidden lg:flex items-center justify-center bg-[#222e35]">
-          <div className="text-center">
-            <h2 className="text-[#e9edef] text-3xl font-light mb-4">WhatsApp Web</h2>
-            <p className="text-[#8696a0]">
-              Send and receive messages without keeping your phone online.
-              <br />
-              Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
-            </p>
-          </div>
-        </div>
+        <ChatHeader
+          avatar={adminProfile.image}
+          name={adminProfile.name}
+          online={true}
+          onInfoClick={() => setShowProfileSettings(true)}
+          onSearchClick={() => setShowSearch(true)}
+          onAvatarClick={() => setShowStatusViewer(true)}
+          statuses={adminProfile.statuses}
+        />
       )}
 
-      {/* Dialogs */}
-      <AdminProfileDialog
-        open={showProfileSettings}
-        onOpenChange={setShowProfileSettings}
-        profile={adminData}
-        onProfileUpdate={setAdminData}
+      <MessageList
+        messages={filteredMessages}
+        selectedMessageIndex={selectedMessageIndex}
+        onImageClick={(url) => {
+          setSelectedImage(url);
+          setShowImageViewer(true);
+        }}
       />
 
-      <AdminContactDialog
-        open={showContactInfo}
-        onOpenChange={setShowContactInfo}
-        chat={selectedChat}
+      <MessageInput onSendMessage={handleSendMessage} />
+
+      <UserSettingsDialog
+        open={showProfileSettings}
+        onOpenChange={setShowProfileSettings}
+        phoneNumber={currentChat.phoneNumber}
+      />
+
+      <ImageViewerDialog
+        open={showImageViewer}
+        onOpenChange={setShowImageViewer}
+        imageUrl={selectedImage}
+      />
+
+      <StatusViewerDialog
+        open={showStatusViewer}
+        onOpenChange={setShowStatusViewer}
+        statuses={adminProfile.statuses || []}
+        onReply={handleStatusReply}
       />
     </div>
   );

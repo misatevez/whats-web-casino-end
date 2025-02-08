@@ -8,7 +8,7 @@ import { toast } from "sonner";
 interface StatusListProps {
   statuses: Status[];
   viewOnly: boolean;
-  onDelete?: (statusId: number) => void;
+  onDelete?: (statusId: string) => void;
   onViewerOpen: () => void;
 }
 
@@ -18,9 +18,9 @@ export function StatusList({
   onDelete,
   onViewerOpen
 }: StatusListProps) {
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleDelete = async (statusId: number) => {
+  const handleDelete = async (statusId: string) => {
     if (!onDelete) return;
     
     console.log('🔵 StatusList: Starting status deletion for ID:', statusId);

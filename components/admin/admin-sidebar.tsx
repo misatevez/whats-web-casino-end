@@ -29,6 +29,9 @@ export function AdminSidebar({
   onProfileClick,
   onLogout
 }: AdminSidebarProps) {
+
+  console.log('Profile:', profile);
+  
   return (
     <div className="w-[400px] border-r border-[#202c33] flex flex-col lg:block hidden">
       <AdminHeader

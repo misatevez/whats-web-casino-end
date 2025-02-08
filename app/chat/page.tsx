@@ -113,7 +113,7 @@ export default function ChatPage() {
     }
   };
 
-  const handleStatusReply = (statusId: number, reply: string, imageUrl: string) => {
+  const handleStatusReply = (statusId: string, reply: string, imageUrl: string) => {
     handleSendMessage(reply, {
       type: 'image',
       name: 'Status Reply',
