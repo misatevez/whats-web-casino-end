@@ -122,7 +122,8 @@ export class CacheManager {
 
     try {
       const cache = await caches.open(`${CACHE_VERSION}_images`);
-      return await cache.match(url);
+      const response = await cache.match(url);
+      return response || null;
     } catch (error) {
       console.error('Error getting cached image:', error);
       return null;
