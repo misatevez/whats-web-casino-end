@@ -12,13 +12,13 @@ import { UserSettingsDialog } from "@/components/chat/user-settings-dialog";
 import { ImageViewerDialog } from "@/components/chat/image-viewer-dialog";
 import { StatusViewerDialog } from "@/components/chat/status-viewer-dialog";
 import { UserFirebaseService } from "@/lib/services/user-firebase-service";
-import { MessagePreview } from "@/lib/types";
+import { MessagePreview, Chat } from "@/lib/types";
 import { getStoredPhoneNumber, clearStoredData } from "@/lib/storage/local-storage";
 
 export default function ChatPage() {
   const router = useRouter();
   const { profile: adminProfile, isLoading: isLoadingAdmin } = useAdminProfile();
-  const [chat, setChat] = useState(null);
+  const [chat, setChat] = useState<Chat | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [firebaseService, setFirebaseService] = useState<UserFirebaseService | null>(null);
   

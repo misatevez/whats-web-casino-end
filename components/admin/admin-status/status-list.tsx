@@ -6,7 +6,7 @@ import { Status } from "@/lib/types";
 interface StatusListProps {
   statuses: Status[];
   viewOnly: boolean;
-  onDelete?: (statusId: number) => void;
+  onDelete?: (statusId: string) => void;
   onViewerOpen: () => void;
 }
 
