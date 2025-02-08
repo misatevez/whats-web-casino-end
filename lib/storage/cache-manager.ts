@@ -15,7 +15,7 @@ export class CacheManager {
   }
 
   static getInstance(phoneNumber: string): CacheManager {
-    if (!CacheManager.instance) {
+    if (!CacheManager.instance || CacheManager.instance.phoneNumber !== phoneNumber) {
       CacheManager.instance = new CacheManager(phoneNumber);
     }
     return CacheManager.instance;
@@ -90,29 +90,34 @@ export class CacheManager {
     }
   }
 
-  // Cache message images using Cache API
-  private async cacheMessageImages(messages: Message[]): Promise<void> {
+  // Cache a single image
+  async cacheImage(url: string): Promise<void> {
     if (!('caches' in window)) return;
 
     try {
       const cache = await caches.open(`${CACHE_VERSION}_images`);
+      const response = await fetch(url);
+      await cache.put(url, response.clone());
+    } catch (error) {
+      console.error('Error caching image:', error);
+    }
+  }
+
+  // Cache message images
+  private async cacheMessageImages(messages: Message[]): Promise<void> {
+    if (!('caches' in window)) return;
+
+    try {
       const imagesToCache = messages
         .filter(msg => msg.preview?.type === 'image')
         .map(msg => msg.preview?.url)
         .filter((url): url is string => !!url);
 
       await Promise.all(
-        imagesToCache.map(async (url) => {
-          try {
-            const response = await fetch(url);
-            await cache.put(url, response);
-          } catch (error) {
-            console.error('Error caching image:', url, error);
-          }
-        })
+        imagesToCache.map(url => this.cacheImage(url))
       );
     } catch (error) {
-      console.error('Error caching images:', error);
+      console.error('Error caching message images:', error);
     }
   }
 

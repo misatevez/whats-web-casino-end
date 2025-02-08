@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FirebaseService } from '@/lib/services/firebase-service';
 import { Chat } from '@/lib/types';
 
@@ -7,8 +7,19 @@ export function useChatSubscription() {
   const [isLoading, setIsLoading] = useState(true);
   const [firebaseService, setFirebaseService] = useState<FirebaseService | null>(null);
 
+  // Memoize the chat update handler
+  const handleChatsUpdate = useCallback((updatedChats: Chat[]) => {
+    setChats(prevChats => {
+      // Only update if there are actual changes
+      if (JSON.stringify(prevChats) !== JSON.stringify(updatedChats)) {
+        return updatedChats;
+      }
+      return prevChats;
+    });
+    setIsLoading(false);
+  }, []);
+
   useEffect(() => {
-    // Inicializar FirebaseService solo en el cliente
     if (typeof window !== 'undefined') {
       setFirebaseService(FirebaseService.getInstance());
     }
@@ -17,18 +28,14 @@ export function useChatSubscription() {
   useEffect(() => {
     if (!firebaseService) return;
 
-    console.log('🔵 Iniciando suscripción a chats');
-    const unsubscribe = firebaseService.subscribeToChatUpdates((updatedChats) => {
-      console.log('✅ Chats actualizados:', updatedChats);
-      setChats(updatedChats);
-      setIsLoading(false);
-    });
+    console.log('🔵 Starting chat subscription');
+    const unsubscribe = firebaseService.subscribeToChatUpdates(handleChatsUpdate);
 
     return () => {
-      console.log('🔵 Limpiando suscripción a chats');
+      console.log('🔵 Cleaning up chat subscription');
       unsubscribe();
     };
-  }, [firebaseService]);
+  }, [firebaseService, handleChatsUpdate]);
 
   return { chats, isLoading };
 }
