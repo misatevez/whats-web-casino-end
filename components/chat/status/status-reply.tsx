@@ -17,8 +17,15 @@ export function StatusReply({
   onSubmit,
   onShowReply
 }: StatusReplyProps) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (reply.trim()) {
+      onSubmit();
+    }
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && reply.trim()) {
       e.preventDefault();
       onSubmit();
     }
@@ -27,10 +34,7 @@ export function StatusReply({
   return (
     <div className="absolute bottom-0 left-0 right-0 p-4">
       {showReply ? (
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          onSubmit();
-        }} className="flex gap-2">
+        <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
             value={reply}
             onChange={(e) => onReplyChange(e.target.value)}
@@ -43,7 +47,8 @@ export function StatusReply({
             type="submit"
             variant="ghost"
             size="icon"
-            className="text-[#00a884]"
+            className="text-[#00a884] hover:text-[#02906f]"
+            disabled={!reply.trim()}
           >
             <Send className="h-5 w-5" />
           </Button>

@@ -1,6 +1,4 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import Image from "next/image";
 import { Status } from "@/lib/types";
 import { useStatusViewer } from "@/hooks/use-status-viewer";
@@ -44,71 +42,116 @@ export function StatusViewerDialog({
   const currentStatus = statuses[currentIndex];
   if (!currentStatus) return null;
 
-  const handleClose = () => {
-    reset();
-    resetReply();
-    onOpenChange(false);
+  const handleDialogChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      reset();
+      resetReply();
+    }
+    onOpenChange(newOpen);
   };
 
   const handleReply = () => {
-    if (onReply) {
+    if (onReply && reply.trim()) {
       handleReplySubmit((replyText) => {
         onReply(currentStatus.id, replyText, currentStatus.imageUrl);
+        // Cerrar el diálogo después de enviar la respuesta
+        handleDialogChange(false);
       });
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-[#111b21] text-[#e9edef] border-none max-w-2xl h-[90vh] p-0">
+    <Dialog open={open} onOpenChange={handleDialogChange}>
+      <DialogContent 
+        className="bg-[#111b21] text-[#e9edef] border-none max-w-2xl h-[90vh] p-0"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+          handleDialogChange(false);
+        }}
+        onEscapeKeyDown={() => handleDialogChange(false)}
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>Status Viewer</DialogTitle>
         </DialogHeader>
-        <div className="relative h-full flex flex-col">
-          <StatusProgress
-            count={statuses.length}
-            currentIndex={currentIndex}
-            progress={progress}
-          />
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4 z-10"
-            onClick={handleClose}
-          >
-            <X className="h-6 w-6 text-white" />
-          </Button>
+        <div className="flex flex-col h-full">
+          {/* Header section with progress */}
+          <div className="flex gap-1 p-4">
+            {Array.from({ length: statuses.length }).map((_, index) => (
+              <div
+                key={index}
+                className="flex-1 h-0.5 bg-[#ffffff40] overflow-hidden"
+              >
+                <div
+                  className="h-full bg-white transition-all duration-100"
+                  style={{
+                    width: index === currentIndex ? `${progress}%` : 
+                           index < currentIndex ? "100%" : "0%"
+                  }}
+                />
+              </div>
+            ))}
+          </div>
 
-          <StatusNavigation
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            hasPrevious={currentIndex > 0}
-            hasNext={currentIndex < statuses.length - 1}
-          />
-
+          {/* Main content section */}
           <div className="flex-1 relative">
-            <Image
-              src={currentStatus.imageUrl}
-              alt={`Status ${currentIndex + 1}`}
-              fill
-              className="object-contain"
-            />
+            {/* Navigation */}
+            <div className="absolute inset-y-0 left-0 flex items-center px-4">
+              <button
+                onClick={handlePrevious}
+                disabled={currentIndex === 0}
+                className="text-white disabled:opacity-0 p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className="absolute inset-y-0 right-0 flex items-center px-4">
+              <button
+                onClick={handleNext}
+                disabled={currentIndex === statuses.length - 1}
+                className="text-white disabled:opacity-0 p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m9 18 6-6-6-6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Status image */}
+            <div className="w-full h-full flex items-center justify-center">
+              <Image
+                src={currentStatus.imageUrl}
+                alt={`Status ${currentIndex + 1}`}
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+
+            {/* Caption */}
             {currentStatus.caption && (
               <div className="absolute bottom-20 left-0 right-0 p-4 text-center">
-                <p className="text-white text-lg">{currentStatus.caption}</p>
+                <p className="text-white text-lg bg-black/30 p-2 rounded-lg inline-block">
+                  {currentStatus.caption}
+                </p>
               </div>
             )}
           </div>
 
+          {/* Reply section */}
           {onReply && (
-            <StatusReply
-              showReply={showReply}
-              reply={reply}
-              onReplyChange={setReply}
-              onSubmit={handleReply}
-              onShowReply={() => setShowReply(true)}
-            />
+            <div className="p-4">
+              <StatusReply
+                showReply={showReply}
+                reply={reply}
+                onReplyChange={setReply}
+                onSubmit={handleReply}
+                onShowReply={() => setShowReply(true)}
+              />
+            </div>
           )}
         </div>
       </DialogContent>
