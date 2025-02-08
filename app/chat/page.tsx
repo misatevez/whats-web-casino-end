@@ -122,9 +122,11 @@ export default function ChatPage() {
 
   if (isLoading || isLoadingAdmin || !chat || !adminProfile) {
     return (
-     <div className="flex justify-center">
-              <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
-            </div>
+     <div className="min-h-screen bg-[#111b21] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
     );
   }
 
