@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Camera, Edit } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import Image from "next/image";
 import { UserProfile } from "@/lib/types";
-import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/lib/firebase';
 
 interface AdminProfileDialogProps {
   open: boolean;
@@ -20,55 +23,128 @@ interface AdminProfileDialogProps {
 export function AdminProfileDialog({
   open,
   onOpenChange,
-  profile,
-  onProfileUpdate,
+  profile: externalProfile,
+  onProfileUpdate: externalUpdate
 }: AdminProfileDialogProps) {
-  const [name, setName] = useState(profile.name);
-  const [about, setAbout] = useState(profile.about);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [name, setName] = useState("");
+  const [about, setAbout] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setName(profile.name);
-    setAbout(profile.about);
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name);
+      setAbout(profile.about);
+    }
   }, [profile]);
+
+  const loadProfile = async () => {
+    try {
+      console.log('🔵 Getting admin profile from Firebase');
+      const profileRef = doc(db, 'admin/profile');
+      const profileDoc = await getDoc(profileRef);
+      
+      if (!profileDoc.exists()) {
+        console.log('🔵 No profile found, creating default profile');
+        const defaultProfile = {
+          name: "WhatsApp Support",
+          image: "https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Favatar.png?alt=media&token=54132d01-d241-429a-b131-1be8951406b7",
+          about: "Official WhatsApp Support",
+          statuses: []
+        };
+        
+        await setDoc(profileRef, {
+          ...defaultProfile,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        setProfile(defaultProfile);
+      } else {
+        const data = profileDoc.data();
+        setProfile({
+          name: data.name || "WhatsApp Support",
+          image: data.image || "https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Favatar.png?alt=media&token=54132d01-d241-429a-b131-1be8951406b7",
+          about: data.about || "Official WhatsApp Support",
+          statuses: []
+        });
+      }
+      setIsLoading(false);
+    } catch (error) {
+      console.error('❌ Error loading profile:', error);
+      toast.error('Failed to load profile');
+      setIsLoading(false);
+    }
+  };
 
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      try {
-        setIsSaving(true);
-        await onProfileUpdate({ ...profile, image: URL.createObjectURL(file) });
-      } catch (error) {
-        toast.error('Failed to update profile image');
-      } finally {
-        setIsSaving(false);
-      }
+    if (!file || !profile) return;
+
+    try {
+      setIsSaving(true);
+      console.log('🔵 Starting admin profile image upload');
+      const timestamp = Date.now();
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `admin/profile_${timestamp}.${fileExtension}`;
+      const storageRef = ref(storage, fileName);
+      
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      
+      // Update profile with new image URL
+      const profileRef = doc(db, 'admin/profile');
+      await updateDoc(profileRef, {
+        image: downloadURL,
+        updatedAt: new Date()
+      });
+      
+      setProfile({ ...profile, image: downloadURL });
+      externalUpdate({ ...profile, image: downloadURL });
+      toast.success('Profile image updated successfully');
+    } catch (error) {
+      console.error('❌ Error updating profile image:', error);
+      toast.error('Failed to update profile image');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleSave = async () => {
-    const updates: Partial<UserProfile> = {};
-    if (name !== profile.name) {
-      updates.name = name;
-    }
-    if (about !== profile.about) {
-      updates.about = about;
-    }
+    if (!profile) return;
+    
+    try {
+      setIsSaving(true);
+      const updates = {
+        name: name.trim(),
+        about: about.trim(),
+        updatedAt: new Date()
+      };
 
-    if (Object.keys(updates).length > 0) {
-      try {
-        setIsSaving(true);
-        await onProfileUpdate({ ...profile, ...updates });
-        onOpenChange(false);
-      } catch (error) {
-        toast.error('Failed to save profile');
-      } finally {
-        setIsSaving(false);
-      }
-    } else {
+      const profileRef = doc(db, 'admin/profile');
+      await updateDoc(profileRef, updates);
+      
+      const updatedProfile = { ...profile, ...updates };
+      setProfile(updatedProfile);
+      externalUpdate(updatedProfile);
+      
+      toast.success('Profile updated successfully');
       onOpenChange(false);
+    } catch (error) {
+      console.error('❌ Error updating profile:', error);
+      toast.error('Failed to update profile');
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  if (isLoading || !profile) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -79,7 +155,7 @@ export function AdminProfileDialog({
         <div className="space-y-6">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              <Avatar className="h-32 w-32">
+              <Avatar className="h-24 w-24 sm:h-32 sm:w-32">
                 <Image
                   src={profile.image}
                   alt="Profile"
