@@ -87,12 +87,16 @@ export default function ChatPage() {
 
   if (isLoading || !adminProfile) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#111b21]">
-        <div className="text-[#e9edef]">Loading...</div>
+        <div className="min-h-screen bg-[#111b21] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm flex flex-col items-center gap-4">
+         
+          <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
 
+ 
   if (!currentChat) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#111b21]">

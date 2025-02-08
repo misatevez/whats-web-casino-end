@@ -12,12 +12,15 @@ export default function Home() {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     // Check if user already has a session
     const storedPhoneNumber = getStoredPhoneNumber();
     if (storedPhoneNumber) {
       router.push("/chat");
+    } else {
+      setIsInitializing(false);
     }
   }, [router]);
 
@@ -49,6 +52,17 @@ export default function Home() {
     }
   };
 
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-[#111b21] flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm flex flex-col items-center gap-4">
+         
+          <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#111b21] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm bg-[#202c33] rounded-lg p-6 sm:p-8">
@@ -63,22 +77,30 @@ export default function Home() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            type="tel"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            placeholder="+54 9 11 1234 5678"
-            className="bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0] h-12 text-center"
-            disabled={loading}
-          />
+          {loading ? (
+            <div className="flex justify-center">
+              <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              <Input
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="+54 9 11 1234 5678"
+                className="bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0] h-12 text-center"
+                disabled={loading}
+              />
 
-          <Button
-            type="submit"
-            className="w-full bg-[#00a884] hover:bg-[#02906f] text-white h-12 font-normal text-lg"
-            disabled={loading}
-          >
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </Button>
+              <Button
+                type="submit"
+                className="w-full bg-[#00a884] hover:bg-[#02906f] text-white h-12 font-normal text-lg"
+                disabled={loading}
+              >
+                Ingresar
+              </Button>
+            </>
+          )}
         </form>
       </div>
     </div>
