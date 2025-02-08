@@ -39,7 +39,7 @@ export function StatusReply({
             value={reply}
             onChange={(e) => onReplyChange(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type a reply..."
+            placeholder="Escribe una respuesta..."
             className="bg-[#2a3942] border-none text-white placeholder:text-[#8696a0]"
             autoFocus
           />
@@ -59,7 +59,7 @@ export function StatusReply({
           className="w-full bg-[#2a3942] text-white hover:bg-[#374248]"
           onClick={onShowReply}
         >
-          Reply to status
+          Responder al estado
         </Button>
       )}
     </div>

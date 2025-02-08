@@ -13,6 +13,7 @@ export default function Home() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     // Check if user already has a session
@@ -26,29 +27,34 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    
+    if (!phoneNumber.trim()) {
+      setError("Por favor, ingrese su número de teléfono");
+      return;
+    }
+    
     console.log('🔵 Iniciando proceso de ingreso con número:', phoneNumber);
     
-    if (phoneNumber.trim()) {
-      setLoading(true);
-      try {
-        console.log('🔵 Intentando crear/obtener chat...');
-        // Crear o obtener el chat
-        const chat = await createOrGetChat(phoneNumber);
-        console.log('✅ Chat creado/obtenido:', chat);
-        
-        // Guardar información en localStorage
-        setStoredPhoneNumber(phoneNumber);
-        setStoredChatId(chat.id);
-        
-        console.log('🔵 Redirigiendo a /chat...');
-        // Redirigir al chat
-        router.push("/chat");
-      } catch (error) {
-        console.error('❌ Error en el proceso de ingreso:', error);
-        alert('Error al crear el chat. Por favor, intenta de nuevo.');
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+    try {
+      console.log('🔵 Intentando crear/obtener chat...');
+      // Crear o obtener el chat
+      const chat = await createOrGetChat(phoneNumber);
+      console.log('✅ Chat creado/obtenido:', chat);
+      
+      // Guardar información en localStorage
+      setStoredPhoneNumber(phoneNumber);
+      setStoredChatId(chat.id);
+      
+      console.log('🔵 Redirigiendo a /chat...');
+      // Redirigir al chat
+      router.push("/chat");
+    } catch (error) {
+      console.error('❌ Error en el proceso de ingreso:', error);
+      setError('Error al crear el chat. Por favor, intenta de nuevo.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -56,7 +62,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-[#111b21] flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-sm flex flex-col items-center gap-4">
-         
+        
           <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
         </div>
       </div>
@@ -83,14 +89,24 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <Input
-                type="tel"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="+54 9 11 1234 5678"
-                className="bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0] h-12 text-center"
-                disabled={loading}
-              />
+              <div className="space-y-2">
+                <Input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    setError(""); // Clear error when user types
+                  }}
+                  placeholder="+54 9 11 1234 5678"
+                  className={`bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0] h-12 text-center ${
+                    error ? "ring-2 ring-red-500" : ""
+                  }`}
+                  disabled={loading}
+                />
+                {error && (
+                  <p className="text-red-500 text-sm text-center">{error}</p>
+                )}
+              </div>
 
               <Button
                 type="submit"
