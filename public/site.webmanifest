@@ -1,0 +1,22 @@
+{
+  "name": "WhatsApp Web",
+  "short_name": "WhatsApp",
+  "icons": [
+    {
+      "src": "https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=6ae5f450-b780-41ea-acc2-23905455e703",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=6ae5f450-b780-41ea-acc2-23905455e703",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#111b21",
+  "background_color": "#111b21",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/"
+}
