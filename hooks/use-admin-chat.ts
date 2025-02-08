@@ -55,20 +55,21 @@ export function useAdminChat() {
 
           // Add message images if not already preloading
           chat.messages.forEach(message => {
-            if (message.preview?.type === 'image' && !imageUrls.has(message.preview.url)) {
-              imageUrls.add(message.preview.url);
+            const previewUrl = message.preview?.url;
+            if (message.preview?.type === 'image' && previewUrl && !imageUrls.has(previewUrl)) {
+              imageUrls.add(previewUrl);
               preloadPromises.push(
                 new Promise((resolve) => {
                   const img = new Image();
                   img.onload = () => {
-                    console.log('✅ [useAdminChat] Message image preloaded:', message.preview?.url);
+                    console.log('✅ [useAdminChat] Message image preloaded:', previewUrl);
                     resolve();
                   };
                   img.onerror = () => {
-                    console.warn('⚠️ [useAdminChat] Failed to preload message image:', message.preview?.url);
+                    console.warn('⚠️ [useAdminChat] Failed to preload message image:', previewUrl);
                     resolve();
                   };
-                  img.src = message.preview.url;
+                  img.src = previewUrl;
                 })
               );
             }

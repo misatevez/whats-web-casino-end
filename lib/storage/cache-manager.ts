@@ -201,34 +201,36 @@ export class CacheManager {
   }
 
   // Get cached image
-  async getCachedImage(url: string): Promise<Response | null> {
-    if (!('caches' in window)) {
-      console.log('⚠️ [CacheManager] Cache API not available');
-      return null;
-    }
-
-    if (!this.isValidUrl(url)) {
-      console.warn('⚠️ [CacheManager] Invalid image URL for retrieval:', url);
-      return null;
-    }
-
-    try {
-      console.log('🔵 [CacheManager] Getting cached image:', url);
-      const cache = await caches.open(`${CACHE_VERSION}_images`);
-      const response = await cache.match(url);
-      
-      if (response) {
-        console.log('✅ [CacheManager] Image found in cache:', url);
-      } else {
-        console.log('⚠️ [CacheManager] Image not found in cache:', url);
-      }
-      
-      return response;
-    } catch (error) {
-      console.warn('⚠️ [CacheManager] Error getting cached image:', url, error);
-      return null;
-    }
+// Fix for the getCachedImage method
+async getCachedImage(url: string): Promise<Response | null> {
+  if (!('caches' in window)) {
+    console.log('⚠️ [CacheManager] Cache API not available');
+    return null;
   }
+
+  if (!this.isValidUrl(url)) {
+    console.warn('⚠️ [CacheManager] Invalid image URL for retrieval:', url);
+    return null;
+  }
+
+  try {
+    console.log('🔵 [CacheManager] Getting cached image:', url);
+    const cache = await caches.open(`${CACHE_VERSION}_images`);
+    const response = await cache.match(url);
+    
+    if (response) {
+      console.log('✅ [CacheManager] Image found in cache:', url);
+      return response;
+    } else {
+      console.log('⚠️ [CacheManager] Image not found in cache:', url);
+      return null;
+    }
+  } catch (error) {
+    console.warn('⚠️ [CacheManager] Error getting cached image:', url, error);
+    return null;
+  }
+}
+
 
   // Update cached messages with new ones
   async updateCachedMessages(newMessages: Message[]): Promise<void> {

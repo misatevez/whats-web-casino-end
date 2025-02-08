@@ -1,4 +1,4 @@
-import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, QuerySnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Chat } from '@/lib/types';
 import { convertToChat } from './converters';
@@ -9,7 +9,7 @@ export class SubscriptionService {
   private unsubscribeFromChats: (() => void) | null = null;
   private activeSubscription = false;
   private lastProcessedUpdate = 0;
-  private readonly UPDATE_THROTTLE = 1500; // 🔹 Aumentado a 1.5s
+  private readonly UPDATE_THROTTLE = 1500;
   private callbacks = new Set<ChatSubscriptionCallback>();
   private lastChatIds = new Set<string>();
 
@@ -71,14 +71,17 @@ export class SubscriptionService {
     }
   }
 
-  private async processSnapshot(snapshot: any) {
+  private async processSnapshot(snapshot: QuerySnapshot<DocumentData>) {
     try {
-      const chats = snapshot.docs.map((chatDoc: any) => convertToChat(chatDoc));
+      const chats: Chat[] = snapshot.docs.map(doc => convertToChat(doc));
+      const newChatIds = new Set(chats.map((chat: Chat) => chat.id));
 
-      const newChatIds = new Set(chats.map(chat => chat.id));
+      // Convert Sets to Arrays for comparison
+      const currentIds = Array.from(this.lastChatIds);
+      const newIds = Array.from(newChatIds);
 
-      if (this.lastChatIds.size === newChatIds.size &&
-          [...this.lastChatIds].every(id => newChatIds.has(id))) {
+      if (currentIds.length === newIds.length && 
+          currentIds.every(id => newChatIds.has(id))) {
         console.log('🟡 [SubscriptionService] No new chats detected, skipping update');
         return;
       }
