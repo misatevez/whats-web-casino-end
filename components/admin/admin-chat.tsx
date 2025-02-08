@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle, Users } from "lucide-react";
@@ -29,7 +29,6 @@ export default function AdminChat() {
   }, []);
 
   useEffect(() => {
-    // Load admin profile
     const loadAdminProfile = async () => {
       try {
         const profile = await getAdminProfile();
@@ -44,25 +43,27 @@ export default function AdminChat() {
     loadAdminProfile();
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = subscribeToChats((updatedChats) => {
-      setChats(updatedChats);
-      
-      // Update selected chat if it exists
-      if (selectedChat) {
-        const updatedSelectedChat = updatedChats.find(chat => chat.id === selectedChat.id);
-        if (updatedSelectedChat) {
-          setSelectedChat(updatedSelectedChat);
-        }
+  // Memoize the chat update handler to prevent unnecessary re-renders
+  const handleChatsUpdate = useCallback((updatedChats: Chat[]) => {
+    setChats(updatedChats);
+    
+    // Only update selected chat if it exists and has actual changes
+    if (selectedChat) {
+      const updatedSelectedChat = updatedChats.find(chat => chat.id === selectedChat.id);
+      if (updatedSelectedChat && JSON.stringify(updatedSelectedChat) !== JSON.stringify(selectedChat)) {
+        setSelectedChat(updatedSelectedChat);
       }
-    });
+    }
+  }, [selectedChat]);
 
+  useEffect(() => {
+    const unsubscribe = subscribeToChats(handleChatsUpdate);
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [selectedChat]);
+  }, [handleChatsUpdate]);
 
   const handleLogout = () => {
     router.push("/admin");
@@ -70,6 +71,13 @@ export default function AdminChat() {
 
   const handleSaveContact = (chat: Chat) => {
     return false;
+  };
+
+  const handleChatSelect = (chat: Chat) => {
+    // Only update if actually selecting a different chat
+    if (selectedChat?.id !== chat.id) {
+      setSelectedChat(chat);
+    }
   };
 
   const filteredChats = chats.filter(chat => 
@@ -120,7 +128,7 @@ export default function AdminChat() {
               selectedChatId={selectedChat?.id}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
-              onChatSelect={setSelectedChat}
+              onChatSelect={handleChatSelect}
               onSaveContact={handleSaveContact}
             />
           </TabsContent>
@@ -131,7 +139,7 @@ export default function AdminChat() {
               selectedChatId={selectedChat?.id}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
-              onChatSelect={setSelectedChat}
+              onChatSelect={handleChatSelect}
               onSaveContact={handleSaveContact}
               showAbout
             />

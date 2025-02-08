@@ -66,11 +66,7 @@ export function ChatList({
               <span className="text-sm text-[#8696a0] truncate">
                 {showAbout ? (chat.about || "Hey there! I am using WhatsApp") : chat.lastMessage}
               </span>
-              {!showAbout && chat.unread > 0 && (
-                <div className="bg-[#00a884] rounded-full h-5 w-5 flex items-center justify-center">
-                  <span className="text-xs text-white">{chat.unread}</span>
-                </div>
-              )}
+    
             </div>
           </div>
         </div>
