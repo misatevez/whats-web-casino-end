@@ -5,22 +5,18 @@ import { SubscriptionService } from './firebase/subscription-service';
 import { Chat, Message, MessagePreview } from '../types';
 
 export class FirebaseService implements FirebaseServiceInterface {
-  private static instance: FirebaseService;
   private chatService: ChatService;
   private messageService: MessageService;
   private subscriptionService: SubscriptionService;
 
-  private constructor() {
+  constructor() {
     this.chatService = new ChatService();
     this.messageService = new MessageService();
     this.subscriptionService = new SubscriptionService();
   }
 
-  static getInstance(): FirebaseService {
-    if (!FirebaseService.instance) {
-      FirebaseService.instance = new FirebaseService();
-    }
-    return FirebaseService.instance;
+  static createInstance(): FirebaseService {
+    return new FirebaseService();
   }
 
   subscribeToChatUpdates(callback: ChatSubscriptionCallback) {

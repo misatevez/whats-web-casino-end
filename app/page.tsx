@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { createOrGetChat } from "@/lib/data";
+import { getStoredPhoneNumber, setStoredPhoneNumber, setStoredChatId } from "@/lib/storage/local-storage";
 
 export default function Home() {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if user already has a session
+    const storedPhoneNumber = getStoredPhoneNumber();
+    if (storedPhoneNumber) {
+      router.push("/chat");
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +32,10 @@ export default function Home() {
         // Crear o obtener el chat
         const chat = await createOrGetChat(phoneNumber);
         console.log('✅ Chat creado/obtenido:', chat);
+        
+        // Guardar información en localStorage
+        setStoredPhoneNumber(phoneNumber);
+        setStoredChatId(chat.id);
         
         console.log('🔵 Redirigiendo a /chat...');
         // Redirigir al chat

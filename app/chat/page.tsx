@@ -23,7 +23,7 @@ export default function ChatPage() {
   const [firebaseService, setFirebaseService] = useState<FirebaseService | null>(null);
   
   useEffect(() => {
-    setFirebaseService(FirebaseService.getInstance());
+    setFirebaseService(FirebaseService.createInstance());
   }, []);
 
   const {
