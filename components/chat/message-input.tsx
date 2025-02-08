@@ -20,21 +20,34 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
   const [showAttachments, setShowAttachments] = useState(false);
   const [messagePreview, setMessagePreview] = useState<MessagePreview | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !messagePreview) || isUploading) {
+    if ((!newMessage.trim() && !messagePreview) || isUploading || isSending) {
       return;
     }
 
+    const messageContent = newMessage.trim();
+    const currentPreview = messagePreview;
+
+    // Clear input immediately for better UX
+    setNewMessage("");
+    setMessagePreview(null);
+    setIsSending(true);
+
     try {
-      await onSendMessage(newMessage.trim(), messagePreview);
-      setNewMessage("");
-      setMessagePreview(null);
+      await onSendMessage(messageContent, currentPreview);
     } catch (error) {
       console.error('❌ Error al enviar mensaje:', error);
       toast.error('Error al enviar mensaje');
+      
+      // Restore message if sending fails
+      setNewMessage(messageContent);
+      setMessagePreview(currentPreview);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -74,12 +87,11 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       };
       
       setMessagePreview(finalPreview);
-      setIsUploading(false);
-      setUploadProgress(0);
     } catch (error) {
       console.error('❌ Error al subir archivo:', error);
       toast.error('Error al subir archivo');
       setMessagePreview(null);
+    } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -99,7 +111,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             variant="ghost" 
             size="icon"
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            disabled={isUploading}
+            disabled={isUploading || isSending}
           >
             <Smile className="h-5 w-5 sm:h-6 sm:w-6 text-[#8696a0]" />
           </Button>
@@ -120,7 +132,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
               type="button" 
               variant="ghost" 
               size="icon"
-              disabled={isUploading}
+              disabled={isUploading || isSending}
             >
               <Paperclip className="h-5 w-5 sm:h-6 sm:w-6 text-[#8696a0]" />
             </Button>
@@ -181,7 +193,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
               size="icon"
               className="h-5 w-5 sm:h-6 sm:w-6"
               onClick={() => setMessagePreview(null)}
-              disabled={isUploading}
+              disabled={isUploading || isSending}
             >
               <X className="h-3 w-3 sm:h-4 sm:w-4 text-[#8696a0]" />
             </Button>
@@ -199,15 +211,19 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
           }}
           placeholder="Escribe un mensaje"
           className="flex-1 bg-[#2a3942] border-none text-[#d1d7db] placeholder:text-[#8696a0] text-sm sm:text-base h-9 sm:h-10"
-          disabled={isUploading}
+          disabled={isUploading || isSending}
         />
         <Button 
           type="submit" 
           variant="ghost" 
           size="icon"
-          disabled={isUploading || (!newMessage.trim() && !messagePreview)}
+          disabled={isUploading || isSending || (!newMessage.trim() && !messagePreview)}
         >
-          <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-[#8696a0]" />
+          {isSending ? (
+            <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 text-[#00a884] animate-spin" />
+          ) : (
+            <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6 text-[#8696a0]" />
+          )}
         </Button>
       </div>
     </form>

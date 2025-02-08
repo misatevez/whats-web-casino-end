@@ -73,9 +73,9 @@ export default function AdminChat() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#111b21]">
-        <p className="text-[#e9edef]">Loading...</p>
-      </div>
+     <div className="flex justify-center">
+              <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+            </div>
     );
   }
 

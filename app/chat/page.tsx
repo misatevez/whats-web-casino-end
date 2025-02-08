@@ -122,9 +122,9 @@ export default function ChatPage() {
 
   if (isLoading || isLoadingAdmin || !chat || !adminProfile) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#111b21]">
-        <div className="text-[#e9edef]">Cargando...</div>
-      </div>
+     <div className="flex justify-center">
+              <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
+            </div>
     );
   }
 
