@@ -82,17 +82,12 @@ export class MessageService {
         sent: !isFromAdmin,
         status: "sent",
         preview: preview || null,
-        timestamp: serverTimestamp(),
-        unread: true
+        timestamp: serverTimestamp()
       };
 
       // Add the message
       const messageDoc = await addDoc(messagesRef, messageData);
       console.log('✅ [MessageService] Message added:', messageDoc.id);
-
-      // Get current unread count
-      const chatDoc = await getDoc(chatRef);
-      const currentUnread = chatDoc.data()?.unread || 0;
 
       // Update chat with last message info
       const lastMessage = preview ? 
@@ -104,11 +99,6 @@ export class MessageService {
         time,
         lastMessageTime: serverTimestamp()
       };
-
-      // Only update unread count for user messages
-      if (!isFromAdmin) {
-        updates['unread'] = currentUnread + 1;
-      }
 
       await updateDoc(chatRef, updates);
       console.log('✅ [MessageService] Chat updated with last message');
@@ -130,11 +120,7 @@ export class MessageService {
     try {
       console.log('🔵 [MessageService] Marking messages as read:', chatId);
       const chatRef = doc(db, 'chats', chatId);
-      
-      await updateDoc(chatRef, {
-        unread: 0
-      });
-      
+      await updateDoc(chatRef, {});
       console.log('✅ [MessageService] Messages marked as read');
     } catch (error) {
       console.error('❌ [MessageService] Error marking messages as read:', error);
