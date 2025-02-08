@@ -24,6 +24,7 @@ export function UserSettingsDialog({
   const [name, setName] = useState("");
   const [about, setAbout] = useState("");
 
+  // Update local state when profile changes
   useEffect(() => {
     if (profile) {
       setName(profile.name);
@@ -54,7 +55,7 @@ export function UserSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-[#222e35] text-[#e9edef] border-none max-w-[90vw] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Configuración de Perfil</DialogTitle>
+          <DialogTitle>Profile Settings</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-4">
@@ -62,7 +63,7 @@ export function UserSettingsDialog({
               <Avatar className="h-24 w-24 sm:h-32 sm:w-32">
                 <Image
                   src={profile.image}
-                  alt="Perfil"
+                  alt="Profile"
                   width={128}
                   height={128}
                   className="rounded-full"
@@ -82,12 +83,12 @@ export function UserSettingsDialog({
           </div>
 
           <div>
-            <label className="text-sm text-[#8696a0]">Tu Nombre</label>
+            <label className="text-sm text-[#8696a0]">Your Name</label>
             <div className="flex gap-2">
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ingresa tu nombre"
+                placeholder="Enter your name"
                 className="bg-[#2a3942] border-none text-[#d1d7db]"
                 disabled={isSaving}
               />
@@ -98,12 +99,12 @@ export function UserSettingsDialog({
           </div>
 
           <div>
-            <label className="text-sm text-[#8696a0]">Info</label>
+            <label className="text-sm text-[#8696a0]">About</label>
             <div className="flex gap-2">
               <Input
                 value={about}
                 onChange={(e) => setAbout(e.target.value)}
-                placeholder="¡Hola! Estoy usando WhatsApp"
+                placeholder="Hey there! I am using WhatsApp"
                 className="bg-[#2a3942] border-none text-[#d1d7db]"
                 disabled={isSaving}
               />
@@ -115,13 +116,13 @@ export function UserSettingsDialog({
 
           <div className="flex items-center gap-2 bg-[#111b21] p-4 rounded-lg">
             <div className="text-[#8696a0]">
-              <span className="block text-sm">Número de Teléfono</span>
+              <span className="block text-sm">Phone Number</span>
               <span className="text-base">{phoneNumber}</span>
             </div>
           </div>
 
           <p className="text-sm text-[#8696a0]">
-            Este no es tu nombre de usuario ni tu PIN. Este nombre será visible para tus contactos de WhatsApp.
+            This is not your username or pin. This name will be visible to your WhatsApp contacts.
           </p>
         </div>
         <DialogFooter>
@@ -130,7 +131,7 @@ export function UserSettingsDialog({
             className="bg-[#00a884] hover:bg-[#02906f] text-white"
             disabled={isSaving}
           >
-            {isSaving ? 'Guardando...' : 'Guardar'}
+            {isSaving ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Message } from "@/lib/types";
 import { toast } from "sonner";
-import { FirebaseService } from "@/lib/services/firebase-service";
 
 interface AdminChatMessageProps {
   message: Message;

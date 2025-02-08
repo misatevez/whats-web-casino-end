@@ -10,7 +10,7 @@ export function useChatSubscription() {
   useEffect(() => {
     // Inicializar FirebaseService solo en el cliente
     if (typeof window !== 'undefined') {
-      setFirebaseService(FirebaseService.createInstance());
+      setFirebaseService(FirebaseService.getInstance());
     }
   }, []);
 

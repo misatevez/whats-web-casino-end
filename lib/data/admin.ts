@@ -57,45 +57,6 @@ export async function getAdminProfile(): Promise<UserProfile> {
   }
 }
 
-// Update admin profile
-export async function updateAdminProfile(updates: Partial<UserProfile>): Promise<void> {
-  try {
-    console.log('🔵 Updating admin profile:', updates);
-    const profileRef = doc(db, 'admin/profile');
-    await updateDoc(profileRef, {
-      ...updates,
-      updatedAt: new Date()
-    });
-    console.log('✅ Admin profile updated successfully');
-  } catch (error) {
-    console.error('❌ Error updating admin profile:', error);
-    throw error;
-  }
-}
-
-// Upload admin profile image
-export async function uploadAdminProfileImage(file: File): Promise<string> {
-  try {
-    console.log('🔵 Starting admin profile image upload');
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `admin/profile_${timestamp}.${fileExtension}`;
-    const storageRef = ref(storage, fileName);
-    
-    await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(storageRef);
-    
-    // Update profile with new image URL
-    await updateAdminProfile({ image: downloadURL });
-    
-    console.log('✅ Profile image uploaded successfully:', downloadURL);
-    return downloadURL;
-  } catch (error) {
-    console.error('❌ Error uploading profile image:', error);
-    throw error;
-  }
-}
-
 // Upload admin status
 export async function uploadAdminStatus(file: File, caption?: string): Promise<Status> {
   try {

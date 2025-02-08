@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import Image from "next/image";
-import { UserProfile } from "@/lib/types";
+import { UserProfile, initialAdminProfile } from "@/lib/types";
 
 interface UserProfileDialogProps {
   open: boolean;
@@ -18,7 +18,7 @@ interface UserProfileDialogProps {
 export function UserProfileDialog({
   open,
   onOpenChange,
-  profile,
+  profile = initialAdminProfile,
   onProfileUpdate,
 }: UserProfileDialogProps) {
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {

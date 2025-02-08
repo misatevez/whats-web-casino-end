@@ -3,8 +3,7 @@
 import { FirebaseService } from '../services/firebase-service';
 import { Chat, MessagePreview } from "../types";
 
-// Create a new instance for each client
-const firebaseService = FirebaseService.createInstance();
+const firebaseService = FirebaseService.getInstance();
 
 // Update online status
 export async function updateOnlineStatus(chatId: string, isOnline: boolean): Promise<void> {

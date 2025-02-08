@@ -36,14 +36,14 @@ export function MessageSearchHeader({
         <Input
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Buscar mensajes"
+          placeholder="Search messages"
           className="pl-10 bg-[#2a3942] border-none text-[#d1d7db] placeholder:text-[#8696a0]"
           autoFocus
         />
       </div>
       {searchTerm && filteredMessages.length > 0 && (
         <div className="text-[#8696a0] text-sm">
-          {selectedIndex !== null ? selectedIndex + 1 : 0} de {filteredMessages.length}
+          {selectedIndex !== null ? selectedIndex + 1 : 0} of {filteredMessages.length}
         </div>
       )}
       {searchTerm && filteredMessages.length > 0 && (

@@ -54,6 +54,7 @@ export function StatusViewerDialog({
     if (onReply && reply.trim()) {
       handleReplySubmit((replyText) => {
         onReply(currentStatus.id, replyText, currentStatus.imageUrl);
+        // Cerrar el diálogo después de enviar la respuesta
         handleDialogChange(false);
       });
     }
@@ -70,10 +71,11 @@ export function StatusViewerDialog({
         onEscapeKeyDown={() => handleDialogChange(false)}
       >
         <DialogHeader className="sr-only">
-          <DialogTitle>Visor de Estados</DialogTitle>
+          <DialogTitle>Status Viewer</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col h-full">
+          {/* Header section with progress */}
           <div className="flex gap-1 p-4">
             {Array.from({ length: statuses.length }).map((_, index) => (
               <div
@@ -91,7 +93,9 @@ export function StatusViewerDialog({
             ))}
           </div>
 
+          {/* Main content section */}
           <div className="flex-1 relative">
+            {/* Navigation */}
             <div className="absolute inset-y-0 left-0 flex items-center px-4">
               <button
                 onClick={handlePrevious}
@@ -116,16 +120,18 @@ export function StatusViewerDialog({
               </button>
             </div>
 
+            {/* Status image */}
             <div className="w-full h-full flex items-center justify-center">
               <Image
                 src={currentStatus.imageUrl}
-                alt={`Estado ${currentIndex + 1}`}
+                alt={`Status ${currentIndex + 1}`}
                 fill
                 className="object-contain"
                 priority
               />
             </div>
 
+            {/* Caption */}
             {currentStatus.caption && (
               <div className="absolute bottom-20 left-0 right-0 p-4 text-center">
                 <p className="text-white text-lg bg-black/30 p-2 rounded-lg inline-block">
@@ -135,6 +141,7 @@ export function StatusViewerDialog({
             )}
           </div>
 
+          {/* Reply section */}
           {onReply && (
             <div className="p-4">
               <StatusReply

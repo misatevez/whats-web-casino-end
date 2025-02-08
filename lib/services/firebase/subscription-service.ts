@@ -12,11 +12,7 @@ export class SubscriptionService {
     try {
       console.log('🔵 Starting chat subscription');
       const chatsRef = collection(db, 'chats');
-      // Query all chats ordered by last message time
-      const q = query(
-        chatsRef,
-        orderBy('lastMessageTime', 'desc')
-      );
+      const q = query(chatsRef, orderBy('lastMessageTime', 'desc'));
 
       this.unsubscribeFromChats = onSnapshot(q, async (snapshot) => {
         const chatsPromises = snapshot.docs.map(async (chatDoc) => {

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminProfile } from "@/hooks/use-admin-profile";
-import { useChatSubscription } from "@/hooks/use-chat-subscription";
 import { useMessageSearch } from "@/hooks/use-message-search";
 import { ChatHeader } from "@/components/chat/chat-header";
 import { MessageList } from "@/components/chat/message-list";
@@ -12,19 +11,52 @@ import { MessageSearchHeader } from "@/components/chat/message-search-header";
 import { UserSettingsDialog } from "@/components/chat/user-settings-dialog";
 import { ImageViewerDialog } from "@/components/chat/image-viewer-dialog";
 import { StatusViewerDialog } from "@/components/chat/status-viewer-dialog";
-import { FirebaseService } from "@/lib/services/firebase-service";
+import { UserFirebaseService } from "@/lib/services/user-firebase-service";
 import { MessagePreview } from "@/lib/types";
+import { getStoredPhoneNumber, clearStoredData } from "@/lib/storage/local-storage";
 
 export default function ChatPage() {
   const router = useRouter();
-  const { profile: adminProfile, updateProfile } = useAdminProfile();
-  const { chats, isLoading } = useChatSubscription();
-  const currentChat = chats[0] || null;
-  const [firebaseService, setFirebaseService] = useState<FirebaseService | null>(null);
+  const { profile: adminProfile, isLoading: isLoadingAdmin } = useAdminProfile();
+  const [chat, setChat] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [firebaseService, setFirebaseService] = useState<UserFirebaseService | null>(null);
   
   useEffect(() => {
-    setFirebaseService(FirebaseService.createInstance());
-  }, []);
+    // Check if user has a phone number stored
+    const phoneNumber = getStoredPhoneNumber();
+    if (!phoneNumber) {
+      router.push("/");
+      return;
+    }
+
+    setFirebaseService(UserFirebaseService.getInstance());
+  }, [router]);
+
+  useEffect(() => {
+    if (!firebaseService) return;
+
+    const phoneNumber = getStoredPhoneNumber();
+    if (!phoneNumber) return;
+
+    console.log('🔵 Starting chat subscription for user:', phoneNumber);
+    const unsubscribe = firebaseService.subscribeToChatUpdates(phoneNumber, (updatedChat) => {
+      if (!updatedChat) {
+        console.log('❌ No chat found for user, redirecting to home');
+        clearStoredData();
+        router.push("/");
+        return;
+      }
+      console.log('✅ Chat updated:', updatedChat.id);
+      setChat(updatedChat);
+      setIsLoading(false);
+    });
+
+    return () => {
+      console.log('🔵 Cleaning up chat subscription');
+      unsubscribe();
+    };
+  }, [firebaseService, router]);
 
   const {
     showSearch,
@@ -36,7 +68,7 @@ export default function ChatPage() {
     handleSearchClose,
     handleNext,
     handlePrevious
-  } = useMessageSearch(currentChat?.messages || []);
+  } = useMessageSearch(chat?.messages || []);
 
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
@@ -44,10 +76,10 @@ export default function ChatPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (currentChat && firebaseService) {
+    if (chat && firebaseService) {
       const setOnlineStatus = async () => {
         try {
-          await firebaseService.updateOnlineStatus(currentChat.id, true);
+          await firebaseService.updateOnlineStatus(chat.id, true);
         } catch (error) {
           console.error('Error updating online status:', error);
         }
@@ -56,17 +88,17 @@ export default function ChatPage() {
       setOnlineStatus();
       
       const handleBeforeUnload = () => {
-        firebaseService.updateOnlineStatus(currentChat.id, false).catch(console.error);
+        firebaseService.updateOnlineStatus(chat.id, false).catch(console.error);
       };
       
       window.addEventListener('beforeunload', handleBeforeUnload);
       
       return () => {
         window.removeEventListener('beforeunload', handleBeforeUnload);
-        firebaseService.updateOnlineStatus(currentChat.id, false).catch(console.error);
+        firebaseService.updateOnlineStatus(chat.id, false).catch(console.error);
       };
     }
-  }, [currentChat?.id, firebaseService]);
+  }, [chat?.id, firebaseService]);
 
   // Fix for Safari viewport height
   useEffect(() => {
@@ -85,25 +117,10 @@ export default function ChatPage() {
     };
   }, []);
 
-  if (isLoading || !adminProfile) {
-    return (
-        <div className="min-h-screen bg-[#111b21] flex flex-col items-center justify-center p-4">
-        <div className="w-full max-w-sm flex flex-col items-center gap-4">
-         
-          <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
-        </div>
-      </div>
-    );
-  }
-
- 
-  if (!currentChat) {
+  if (isLoading || isLoadingAdmin || !chat || !adminProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#111b21]">
-        <div className="text-center text-[#e9edef]">
-          <h2 className="text-2xl mb-4">Starting chat...</h2>
-          <p className="text-[#8696a0]">Please wait while the conversation loads.</p>
-        </div>
+        <div className="text-[#e9edef]">Loading...</div>
       </div>
     );
   }
@@ -111,7 +128,7 @@ export default function ChatPage() {
   const handleSendMessage = async (content: string, preview: MessagePreview | null) => {
     if ((!content.trim() && !preview) || !firebaseService) return;
     try {
-      await firebaseService.sendMessage(currentChat.id, content, preview, false);
+      await firebaseService.sendMessage(chat.id, content, preview, false);
     } catch (error) {
       console.error('Error sending message:', error);
     }
@@ -163,7 +180,7 @@ export default function ChatPage() {
       <UserSettingsDialog
         open={showProfileSettings}
         onOpenChange={setShowProfileSettings}
-        phoneNumber={currentChat.phoneNumber}
+        phoneNumber={chat.phoneNumber}
       />
 
       <ImageViewerDialog

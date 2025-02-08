@@ -5,7 +5,7 @@ import { SubscriptionService } from './firebase/subscription-service';
 import { Chat, Message, MessagePreview } from '../types';
 
 export class FirebaseService implements FirebaseServiceInterface {
-  private static instance: FirebaseService | null = null;
+  private static instance: FirebaseService;
   private chatService: ChatService;
   private messageService: MessageService;
   private subscriptionService: SubscriptionService;
@@ -21,10 +21,6 @@ export class FirebaseService implements FirebaseServiceInterface {
       FirebaseService.instance = new FirebaseService();
     }
     return FirebaseService.instance;
-  }
-
-  static createInstance(): FirebaseService {
-    return new FirebaseService();
   }
 
   subscribeToChatUpdates(callback: ChatSubscriptionCallback) {
