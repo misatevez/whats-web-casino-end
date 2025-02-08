@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'WhatsApp Web',
-  description: 'WhatsApp Web - Send and receive messages without keeping your phone online.',
+  description: 'WhatsApp Web - Envía y recibe mensajes sin mantener tu teléfono conectado.',
   viewport: {
     width: 'device-width',
     initialScale: 1,
@@ -37,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="overscroll-y-none">
+    <html lang="es" className="overscroll-y-none">
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />

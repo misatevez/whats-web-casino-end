@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -64,7 +62,6 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-[#111b21] flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-sm flex flex-col items-center gap-4">
-        
           <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin" />
         </div>
       </div>
@@ -99,7 +96,7 @@ export default function Home() {
                     setPhoneNumber(e.target.value);
                     setError(""); // Clear error when user types
                   }}
-                  placeholder="+54 9 11 1234 5678"
+                  placeholder="Ingresa tu número de WhatsApp"
                   className={`bg-[#2a3942] border-none text-[#e9edef] placeholder:text-[#8696a0] h-12 text-center ${
                     error ? "ring-2 ring-red-500" : ""
                   }`}
@@ -115,7 +112,7 @@ export default function Home() {
                 className="w-full bg-[#00a884] hover:bg-[#02906f] text-white h-12 font-normal text-lg"
                 disabled={loading}
               >
-                Ingresar
+                Continuar
               </Button>
             </>
           )}

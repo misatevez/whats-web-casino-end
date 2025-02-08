@@ -4,7 +4,7 @@ import { useState, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Smile, Paperclip, ArrowRight, Image as ImageIcon, Camera, File, X } from "lucide-react";
+import { Smile, Paperclip, ArrowRight, Image as ImageIcon, Camera, File, X, Loader2 } from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
 import { MessagePreview } from "@/lib/types";
 import { toast } from "sonner";
@@ -45,6 +45,11 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
         size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`
       };
 
+      setMessagePreview({
+        ...tempPreview,
+        url: URL.createObjectURL(file)
+      });
+
       const downloadURL = await uploadFile(file, ({ progress, error }) => {
         if (error) {
           toast.error(error);
@@ -64,7 +69,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       setIsUploading(false);
       setUploadProgress(0);
     } catch (error) {
-      toast.error('Failed to upload file');
+      toast.error('Error al subir el archivo');
       setMessagePreview(null);
       setIsUploading(false);
       setUploadProgress(0);
@@ -119,17 +124,17 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             <div className="flex flex-col">
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <ImageIcon className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Photos & Videos</span>
+                <span className="text-[#d1d7db] text-sm">Fotos y Videos</span>
                 <input type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
               </label>
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <Camera className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Camera</span>
+                <span className="text-[#d1d7db] text-sm">Cámara</span>
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} />
               </label>
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <File className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Document</span>
+                <span className="text-[#d1d7db] text-sm">Documento</span>
                 <input type="file" className="hidden" onChange={handleFileSelect} />
               </label>
             </div>
@@ -144,9 +149,14 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
               <File className="h-4 w-4 sm:h-5 sm:w-5 text-[#8696a0]" />
             )}
             <div className="flex flex-col">
-              <span className="text-[#e9edef] text-xs sm:text-sm truncate max-w-[80px] sm:max-w-[100px]">
-                {messagePreview.name}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[#e9edef] text-xs sm:text-sm truncate max-w-[80px] sm:max-w-[100px]">
+                  {messagePreview.name}
+                </span>
+                {isUploading && (
+                  <Loader2 className="h-4 w-4 text-[#00a884] animate-spin" />
+                )}
+              </div>
               {isUploading && (
                 <div className="w-full bg-[#202c33] rounded-full h-1">
                   <div
@@ -178,7 +188,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
               handleSubmit(e);
             }
           }}
-          placeholder="Type a message"
+          placeholder="Escribe un mensaje"
           className="flex-1 bg-[#2a3942] border-none text-[#d1d7db] placeholder:text-[#8696a0] text-sm sm:text-base h-9 sm:h-10"
           disabled={isUploading}
         />
