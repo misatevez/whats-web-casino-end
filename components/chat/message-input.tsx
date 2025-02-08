@@ -33,8 +33,8 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       setNewMessage("");
       setMessagePreview(null);
     } catch (error) {
-      console.error('❌ Error sending message:', error);
-      toast.error('Failed to send message');
+      console.error('❌ Error al enviar mensaje:', error);
+      toast.error('Error al enviar mensaje');
     }
   };
 
@@ -77,8 +77,8 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       setIsUploading(false);
       setUploadProgress(0);
     } catch (error) {
-      console.error('❌ Error uploading file:', error);
-      toast.error('Failed to upload file');
+      console.error('❌ Error al subir archivo:', error);
+      toast.error('Error al subir archivo');
       setMessagePreview(null);
       setIsUploading(false);
       setUploadProgress(0);
@@ -133,17 +133,17 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             <div className="flex flex-col">
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <ImageIcon className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Photos & Videos</span>
+                <span className="text-[#d1d7db] text-sm">Fotos y Videos</span>
                 <input type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
               </label>
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <Camera className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Camera</span>
+                <span className="text-[#d1d7db] text-sm">Cámara</span>
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} />
               </label>
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <File className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Document</span>
+                <span className="text-[#d1d7db] text-sm">Documento</span>
                 <input type="file" className="hidden" onChange={handleFileSelect} />
               </label>
             </div>
@@ -197,7 +197,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
               handleSubmit(e);
             }
           }}
-          placeholder="Type a message"
+          placeholder="Escribe un mensaje"
           className="flex-1 bg-[#2a3942] border-none text-[#d1d7db] placeholder:text-[#8696a0] text-sm sm:text-base h-9 sm:h-10"
           disabled={isUploading}
         />

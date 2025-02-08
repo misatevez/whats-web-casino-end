@@ -42,21 +42,21 @@ export default function ChatPage() {
     const phoneNumber = getStoredPhoneNumber();
     if (!phoneNumber) return;
 
-    console.log('🔵 Starting chat subscription for user:', phoneNumber);
+    console.log('🔵 Iniciando suscripción del chat para usuario:', phoneNumber);
     const unsubscribe = firebaseService.subscribeToChatUpdates(phoneNumber, (updatedChat) => {
       if (!updatedChat) {
-        console.log('❌ No chat found for user, redirecting to home');
+        console.log('❌ No se encontró el chat del usuario, redirigiendo al inicio');
         clearStoredData();
         router.push("/");
         return;
       }
-      console.log('✅ Chat updated:', updatedChat.id);
+      console.log('✅ Chat actualizado:', updatedChat.id);
       setChat(updatedChat);
       setIsLoading(false);
     });
 
     return () => {
-      console.log('🔵 Cleaning up chat subscription');
+      console.log('🔵 Limpiando suscripción del chat');
       unsubscribe();
     };
   }, [firebaseService, router]);
@@ -84,7 +84,7 @@ export default function ChatPage() {
         try {
           await firebaseService.updateOnlineStatus(chat.id, true);
         } catch (error) {
-          console.error('Error updating online status:', error);
+          console.error('Error actualizando estado en línea:', error);
         }
       };
 
@@ -123,7 +123,7 @@ export default function ChatPage() {
   if (isLoading || isLoadingAdmin || !chat || !adminProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#111b21]">
-        <div className="text-[#e9edef]">Loading...</div>
+        <div className="text-[#e9edef]">Cargando...</div>
       </div>
     );
   }
@@ -132,11 +132,11 @@ export default function ChatPage() {
     if (!chat || (!content.trim() && !preview)) return;
 
     try {
-      console.log('🔵 Sending message:', { content, preview });
+      console.log('🔵 Enviando mensaje:', { content, preview });
       await firebaseService?.sendMessage(chat.id, content, preview);
-      console.log('✅ Message sent successfully');
+      console.log('✅ Mensaje enviado exitosamente');
     } catch (error) {
-      console.error('❌ Error sending message:', error);
+      console.error('❌ Error al enviar mensaje:', error);
       throw error;
     }
   };
@@ -144,7 +144,7 @@ export default function ChatPage() {
   const handleStatusReply = (statusId: string, reply: string, imageUrl: string) => {
     handleSendMessage(reply, {
       type: 'image',
-      name: 'Status Reply',
+      name: 'Respuesta a Estado',
       url: imageUrl
     });
   };
