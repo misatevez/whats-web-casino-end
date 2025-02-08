@@ -8,13 +8,14 @@ export class MessageService {
 
   async loadMoreMessages(chatId: string, lastMessageId: string): Promise<Message[]> {
     try {
-      console.log('🔵 Loading more messages:', { chatId, lastMessageId });
+      console.log('🔵 [MessageService] Loading more messages:', { chatId, lastMessageId });
       
       // Get the last message document
       const lastMessageRef = doc(db, 'chats', chatId, 'messages', lastMessageId);
       const lastMessageDoc = await getDoc(lastMessageRef);
       
       if (!lastMessageDoc.exists()) {
+        console.error('❌ [MessageService] Last message not found');
         throw new Error('Last message not found');
       }
 
@@ -32,17 +33,23 @@ export class MessageService {
         .map(convertToMessage)
         .reverse();
       
-      console.log('✅ Loaded more messages:', newMessages.length);
+      console.log('✅ [MessageService] Loaded more messages:', newMessages.length);
       return newMessages;
     } catch (error) {
-      console.error('❌ Error loading more messages:', error);
+      console.error('❌ [MessageService] Error loading more messages:', error);
       throw error;
     }
   }
 
   async sendMessage(chatId: string, content: string, preview: MessagePreview | null = null, isFromAdmin: boolean = false): Promise<void> {
     try {
-      console.log('🔵 Sending message:', { chatId, content, preview, isFromAdmin });
+      console.log('🔵 [MessageService] Sending message:', { 
+        chatId, 
+        hasContent: !!content, 
+        hasPreview: !!preview, 
+        isFromAdmin 
+      });
+
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const chatRef = doc(db, 'chats', chatId);
       const messagesRef = collection(chatRef, 'messages');
@@ -57,21 +64,24 @@ export class MessageService {
       };
 
       // Add the message
-      await addDoc(messagesRef, messageData);
+      const messageDoc = await addDoc(messagesRef, messageData);
+      console.log('✅ [MessageService] Message added:', messageDoc.id);
 
       // Update the chat with the last message info
+      const lastMessage = preview ? 
+        preview.type === 'image' ? '📷 Photo' : `📄 ${preview.name}` :
+        content;
+
       await updateDoc(chatRef, {
-        lastMessage: preview ? 
-          preview.type === 'image' ? '📷 Photo' : `📄 ${preview.name}` :
-          content,
+        lastMessage,
         time,
         lastMessageTime: serverTimestamp(),
         unread: isFromAdmin ? 1 : 0
       });
 
-      console.log('✅ Message sent successfully');
+      console.log('✅ [MessageService] Chat updated with last message');
     } catch (error) {
-      console.error('❌ Error sending message:', error);
+      console.error('❌ [MessageService] Error sending message:', error);
       throw error;
     }
   }

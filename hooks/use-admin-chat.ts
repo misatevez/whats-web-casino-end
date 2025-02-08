@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Chat, UserProfile } from "@/lib/types";
@@ -12,68 +14,129 @@ export function useAdminChat() {
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const selectedChatRef = useRef<string | null>(null);
+  const isPreloadingRef = useRef(false);
+  const lastUpdateRef = useRef<string>('');
 
   const { profile: adminData, updateProfile: setAdminData, isLoading: isLoadingProfile } = useAdminProfile();
   const { chats, isLoading: isLoadingChats } = useChatSubscription();
 
   // Preload images from all chats
   useEffect(() => {
-    if (!chats.length || isInitializing) return;
+    if (!chats.length || isPreloadingRef.current) return;
 
     const preloadImages = async () => {
-      const imageUrls = new Set<string>();
-
-      // Collect all unique image URLs from chats
-      chats.forEach(chat => {
-        // Add avatar
-        imageUrls.add(chat.avatar);
-
-        // Add message images
-        chat.messages.forEach(message => {
-          if (message.preview?.type === 'image') {
-            imageUrls.add(message.preview.url);
-          }
-        });
-      });
-
-      // Preload all images
-      const preloadPromises = Array.from(imageUrls).map(url => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.onload = resolve;
-          img.onerror = reject;
-          img.src = url;
-        });
-      });
-
       try {
-        await Promise.all(preloadPromises);
-        console.log('✅ All chat images preloaded');
+        isPreloadingRef.current = true;
+        console.log('🔵 [useAdminChat] Starting initial image preload');
+        
+        const imageUrls = new Set<string>();
+        const preloadPromises: Promise<void>[] = [];
+
+        // Collect all unique image URLs from chats
+        chats.forEach(chat => {
+          // Add avatar if not already preloading
+          if (!imageUrls.has(chat.avatar)) {
+            imageUrls.add(chat.avatar);
+            preloadPromises.push(
+              new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                  console.log('✅ [useAdminChat] Avatar preloaded:', chat.id);
+                  resolve();
+                };
+                img.onerror = () => {
+                  console.warn('⚠️ [useAdminChat] Failed to preload avatar:', chat.id);
+                  resolve();
+                };
+                img.src = chat.avatar;
+              })
+            );
+          }
+
+          // Add message images if not already preloading
+          chat.messages.forEach(message => {
+            if (message.preview?.type === 'image' && !imageUrls.has(message.preview.url)) {
+              imageUrls.add(message.preview.url);
+              preloadPromises.push(
+                new Promise((resolve) => {
+                  const img = new Image();
+                  img.onload = () => {
+                    console.log('✅ [useAdminChat] Message image preloaded:', message.preview?.url);
+                    resolve();
+                  };
+                  img.onerror = () => {
+                    console.warn('⚠️ [useAdminChat] Failed to preload message image:', message.preview?.url);
+                    resolve();
+                  };
+                  img.src = message.preview.url;
+                })
+              );
+            }
+          });
+        });
+
+        console.log('🔵 [useAdminChat] Preloading images:', imageUrls.size);
+        await Promise.allSettled(preloadPromises);
+        console.log('✅ [useAdminChat] All images preloaded');
+        
         setIsInitializing(false);
       } catch (error) {
-        console.error('❌ Error preloading images:', error);
+        console.error('❌ [useAdminChat] Error during image preload:', error);
         setIsInitializing(false);
+      } finally {
+        isPreloadingRef.current = false;
       }
     };
 
     preloadImages();
-  }, [chats, isInitializing]);
+  }, [chats]);
 
-  // Controlled chat selection
+  // Controlled chat selection with debounce
   const handleChatSelect = useCallback((chat: Chat) => {
-    if (selectedChatRef.current === chat.id) return;
+    console.log('🔵 [useAdminChat] Chat selection requested:', {
+      currentId: selectedChatRef.current,
+      newId: chat.id,
+      isInitializing
+    });
+
+    if (isInitializing) {
+      console.log('🟡 [useAdminChat] Still initializing, deferring selection');
+      return;
+    }
+
+    if (selectedChatRef.current === chat.id) {
+      console.log('🟡 [useAdminChat] Chat already selected, skipping');
+      return;
+    }
+
+    console.log('✅ [useAdminChat] Updating selected chat:', chat.id);
     selectedChatRef.current = chat.id;
     setSelectedChat(chat);
-  }, []);
+  }, [isInitializing]);
 
-  // Update selected chat when chats update
+  // Update selected chat when chats update, with change detection
   useEffect(() => {
     if (!selectedChatRef.current || !chats.length) return;
 
     const updatedSelectedChat = chats.find(chat => chat.id === selectedChatRef.current);
-    if (updatedSelectedChat) {
-      setSelectedChat(updatedSelectedChat);
+    if (!updatedSelectedChat) return;
+
+    // Create a hash of relevant chat data to detect real changes
+    const chatHash = JSON.stringify({
+      id: updatedSelectedChat.id,
+      lastMessage: updatedSelectedChat.lastMessage,
+      messages: updatedSelectedChat.messages.map(m => m.id),
+      online: updatedSelectedChat.online
+    });
+
+    if (chatHash === lastUpdateRef.current) {
+      console.log('🟡 [useAdminChat] No relevant changes in selected chat, skipping update');
+      return;
     }
+
+    console.log('✅ [useAdminChat] Updating selected chat with new data:', updatedSelectedChat.id);
+    lastUpdateRef.current = chatHash;
+    setSelectedChat(updatedSelectedChat);
   }, [chats]);
 
   const handleLogout = () => {

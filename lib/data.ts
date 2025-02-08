@@ -79,8 +79,8 @@ export function subscribeToChats(callback: (chats: Chat[]) => void) {
   return onSnapshot(q, async (snapshot) => {
     const chatsPromises = snapshot.docs.map(async (chatDoc) => {
       const chat = convertToChat(chatDoc);
-      
-      // Get messages for this chat
+
+      // 🔹 Obtener mensajes del chat
       const messagesRef = collection(db, 'chats', chat.id, 'messages');
       const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
       const messagesSnapshot = await getDocs(messagesQuery);
@@ -90,6 +90,19 @@ export function subscribeToChats(callback: (chats: Chat[]) => void) {
     });
 
     const chats = await Promise.all(chatsPromises);
+
+    // 🔹 Evitar renderizados innecesarios
+    const updateHash = JSON.stringify(chats.map(c => ({
+      id: c.id,
+      lastMessage: c.lastMessage,
+    })));
+
+    if (updateHash === (subscribeToChats as any).lastUpdateHash) {
+      console.log('🟡 [subscribeToChats] No hay cambios en los chats, omitiendo actualización.');
+      return;
+    }
+
+    (subscribeToChats as any).lastUpdateHash = updateHash;
     callback(chats);
   });
 }
@@ -100,11 +113,14 @@ export async function createOrGetChat(phoneNumber: string): Promise<Chat> {
     const chatsRef = collection(db, 'chats');
     const q = query(chatsRef, where('phoneNumber', '==', phoneNumber));
     const querySnapshot = await getDocs(q);
-    
+
     if (!querySnapshot.empty) {
+      console.log('✅ [createOrGetChat] Chat existente encontrado:', phoneNumber);
       return convertToChat(querySnapshot.docs[0]);
     }
 
+    console.log('🔵 [createOrGetChat] Creando nuevo chat:', phoneNumber);
+    
     const chatData = {
       name: phoneNumber,
       phoneNumber,
@@ -119,9 +135,8 @@ export async function createOrGetChat(phoneNumber: string): Promise<Chat> {
     const docRef = await addDoc(chatsRef, chatData);
     const chatId = docRef.id;
 
-    // Create welcome message
-    const messagesRef = collection(db, 'chats', chatId, 'messages');
-    await addDoc(messagesRef, {
+    // 🔹 Crear mensaje de bienvenida
+    await addDoc(collection(db, 'chats', chatId, 'messages'), {
       content: "¡Hola! ¿Cómo podemos ayudarte?",
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       sent: false,
@@ -129,12 +144,11 @@ export async function createOrGetChat(phoneNumber: string): Promise<Chat> {
       timestamp: serverTimestamp()
     });
 
-    return {
-      id: chatId,
-      ...chatData,
-      messages: []
-    } as Chat;
+    console.log('✅ [createOrGetChat] Chat creado con éxito:', chatId);
+    
+    return { id: chatId, ...chatData, messages: [] } as Chat;
   } catch (error) {
+    console.error('❌ [createOrGetChat] Error creando chat:', error);
     throw error;
   }
 }
@@ -155,22 +169,22 @@ export async function sendMessage(chatId: string, content: string, preview: Mess
       timestamp: serverTimestamp()
     };
 
-    // Add the message
+    // 🔹 Enviar mensaje y actualizar chat en una sola transacción
     await addDoc(messagesRef, messageData);
-
-    // Update the chat with the last message info
     await updateDoc(chatRef, {
-      lastMessage: preview ? 
-        preview.type === 'image' ? '📷 Photo' : `📄 ${preview.name}` :
-        content,
+      lastMessage: preview ? (preview.type === 'image' ? '📷 Photo' : `📄 ${preview.name}`) : content,
       time,
       lastMessageTime: serverTimestamp(),
       unread: isFromAdmin ? 1 : 0
     });
+
+    console.log('✅ [sendMessage] Mensaje enviado con éxito:', messageData);
   } catch (error) {
+    console.error('❌ [sendMessage] Error enviando mensaje:', error);
     throw error;
   }
 }
+
 
 // Mark message as read
 export async function markMessageAsRead(chatId: string, messageId: string): Promise<void> {

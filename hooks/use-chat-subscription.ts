@@ -1,41 +1,50 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FirebaseService } from '@/lib/services/firebase-service';
 import { Chat } from '@/lib/types';
 
 export function useChatSubscription() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [firebaseService, setFirebaseService] = useState<FirebaseService | null>(null);
+  const lastUpdateRef = useRef<string>('');
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Memoize the chat update handler
   const handleChatsUpdate = useCallback((updatedChats: Chat[]) => {
-    setChats(prevChats => {
-      // Only update if there are actual changes
-      if (JSON.stringify(prevChats) !== JSON.stringify(updatedChats)) {
-        return updatedChats;
-      }
-      return prevChats;
-    });
-    setIsLoading(false);
-  }, []);
+    const updateHash = JSON.stringify(updatedChats.map(c => ({
+      id: c.id,
+      lastMessage: c.lastMessage,
+    })));
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setFirebaseService(FirebaseService.getInstance());
+    if (updateHash === lastUpdateRef.current) {
+      console.log('🟡 [useChatSubscription] No changes detected, skipping update');
+      return;
     }
+
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+
+    updateTimeoutRef.current = setTimeout(() => {
+      console.log('🔵 [useChatSubscription] Processing update');
+      lastUpdateRef.current = updateHash;
+      setChats(updatedChats);
+      setIsLoading(false);
+    }, 600); 
+
   }, []);
 
   useEffect(() => {
-    if (!firebaseService) return;
-
-    console.log('🔵 Starting chat subscription');
+    const firebaseService = FirebaseService.getInstance();
+    console.log('🔵 [useChatSubscription] Setting up subscription');
     const unsubscribe = firebaseService.subscribeToChatUpdates(handleChatsUpdate);
 
     return () => {
-      console.log('🔵 Cleaning up chat subscription');
+      console.log('🔵 [useChatSubscription] Cleaning up subscription');
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
       unsubscribe();
     };
-  }, [firebaseService, handleChatsUpdate]);
+  }, [handleChatsUpdate]);
 
   return { chats, isLoading };
 }

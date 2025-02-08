@@ -1,8 +1,8 @@
 "use client";
 
 import { Chat } from "@/lib/types";
-import { MessageList } from "./message-list";
-import { MessageSearch } from "./message-search";
+import { MessageList } from "../admin-chat-view/message-list";
+import { MessageSearch } from "../admin-chat-view/message-search";
 import { ChatHeader } from "@/components/chat/chat-header";
 import { MessageInput } from "@/components/chat/message-input";
 import { ImageViewerDialog } from "@/components/chat/image-viewer-dialog";
@@ -15,6 +15,12 @@ interface AdminChatViewProps {
 }
 
 export function AdminChatView({ chat, onInfoClick }: AdminChatViewProps) {
+  console.log('🔵 [AdminChatView] Rendering for chat:', {
+    chatId: chat.id,
+    name: chat.name,
+    messageCount: chat.messages.length
+  });
+
   const {
     showImageViewer,
     setShowImageViewer,

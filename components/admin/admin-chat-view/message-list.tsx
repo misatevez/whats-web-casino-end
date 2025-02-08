@@ -1,6 +1,8 @@
+"use client";
+
 import { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AdminChatMessage } from "./message";
+import { AdminChatMessage } from "../admin-chat-message";
 import { Message } from "@/lib/types";
 
 interface MessageListProps {
@@ -17,14 +19,21 @@ export function MessageList({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  console.log('🔵 [MessageList] Rendering with:', {
+    messageCount: messages.length,
+    selectedIndex: selectedMessageIndex
+  });
+
   useEffect(() => {
     if (messagesEndRef.current) {
+      console.log('🔵 [MessageList] Scrolling to bottom');
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages.length]);
 
   useEffect(() => {
     if (selectedMessageIndex !== null) {
+      console.log('🔵 [MessageList] Scrolling to selected message:', selectedMessageIndex);
       const messageElements = scrollAreaRef.current?.querySelectorAll('.message-item');
       if (messageElements && messageElements[selectedMessageIndex]) {
         messageElements[selectedMessageIndex].scrollIntoView({ 

@@ -8,7 +8,7 @@ import { ChatList } from "@/components/chat/chat-list";
 
 interface AdminChatListProps {
   chats: Chat[];
-  selectedChatId?: string;  // Changed to string to match Chat type
+  selectedChatId?: string;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   onChatSelect: (chat: Chat) => void;
@@ -25,6 +25,20 @@ export function AdminChatList({
   onSaveContact,
   showAbout
 }: AdminChatListProps) {
+  console.log('🔵 [AdminChatList] Rendering with:', {
+    totalChats: chats.length,
+    selectedChatId,
+    searchTerm
+  });
+
+  const handleChatSelect = (chat: Chat) => {
+    console.log('🔵 [AdminChatList] Chat selected:', {
+      chatId: chat.id,
+      previouslySelected: selectedChatId === chat.id
+    });
+    onChatSelect(chat);
+  };
+
   return (
     <>
       <div className="p-2">
@@ -43,7 +57,7 @@ export function AdminChatList({
         <ChatList
           chats={chats}
           selectedChatId={selectedChatId}
-          onChatSelect={onChatSelect}
+          onChatSelect={handleChatSelect}
           onSaveContact={onSaveContact}
           showAbout={showAbout}
         />

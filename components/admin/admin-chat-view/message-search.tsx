@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ArrowLeft } from "lucide-react";
@@ -22,6 +24,12 @@ export function MessageSearch({
   onNext,
   onPrevious
 }: MessageSearchProps) {
+  console.log('🔵 [MessageSearch] Rendering with:', {
+    searchTerm,
+    filteredCount: filteredMessages.length,
+    selectedIndex
+  });
+
   return (
     <div className="h-16 bg-[#202c33] flex items-center px-4 gap-4">
       <Button 

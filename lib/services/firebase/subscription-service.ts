@@ -1,57 +1,111 @@
-import { collection, query, orderBy, onSnapshot, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Chat } from '@/lib/types';
-import { convertToChat, convertToMessage } from './converters';
+import { convertToChat } from './converters';
 import { ChatSubscriptionCallback } from './types';
 
 export class SubscriptionService {
+  private static instance: SubscriptionService | null = null;
   private unsubscribeFromChats: (() => void) | null = null;
-  private readonly MESSAGES_PER_PAGE = 50;
+  private activeSubscription = false;
+  private lastProcessedUpdate = 0;
+  private readonly UPDATE_THROTTLE = 1500; // 🔹 Aumentado a 1.5s
+  private callbacks = new Set<ChatSubscriptionCallback>();
+  private lastChatIds = new Set<string>();
 
-  subscribeToChatUpdates(callback: ChatSubscriptionCallback) {
+  private constructor() {}
+
+  static getInstance(): SubscriptionService {
+    if (!SubscriptionService.instance) {
+      SubscriptionService.instance = new SubscriptionService();
+    }
+    return SubscriptionService.instance;
+  }
+
+  subscribeToChatUpdates(callback: ChatSubscriptionCallback): () => void {
+    console.log('🔵 [SubscriptionService] New subscription requested');
+    this.callbacks.add(callback);
+
+    if (!this.activeSubscription) {
+      this.startGlobalSubscription();
+    }
+
+    return () => {
+      console.log('🔵 [SubscriptionService] Unsubscribing callback');
+      this.callbacks.delete(callback);
+      if (this.callbacks.size === 0) {
+        this.cleanup();
+      }
+    };
+  }
+
+  private async startGlobalSubscription() {
+    if (this.activeSubscription) {
+      console.log('🟡 [SubscriptionService] Subscription already active');
+      return;
+    }
+
     try {
-      console.log('🔵 Starting chat subscription');
+      console.log('🔵 [SubscriptionService] Starting global subscription');
       const chatsRef = collection(db, 'chats');
       const q = query(chatsRef, orderBy('lastMessageTime', 'desc'));
 
-      this.unsubscribeFromChats = onSnapshot(q, async (snapshot) => {
-        const chatsPromises = snapshot.docs.map(async (chatDoc) => {
-          const chat = convertToChat(chatDoc);
-          
-          // Get initial messages for this chat
-          const messagesRef = collection(db, 'chats', chat.id, 'messages');
-          const messagesQuery = query(
-            messagesRef, 
-            orderBy('timestamp', 'desc'),
-            limit(this.MESSAGES_PER_PAGE)
-          );
-          const messagesSnapshot = await getDocs(messagesQuery);
-          
-          // Convert and reverse messages to show newest last
-          chat.messages = messagesSnapshot.docs
-            .map(convertToMessage)
-            .reverse();
-          
-          return chat;
-        });
+      const initialSnapshot = await getDocs(q);
+      await this.processSnapshot(initialSnapshot);
 
-        const chats = await Promise.all(chatsPromises);
-        console.log('✅ Chats updated:', chats.length);
-        callback(chats);
+      this.unsubscribeFromChats = onSnapshot(q, async (snapshot) => {
+        const now = Date.now();
+        if (now - this.lastProcessedUpdate < this.UPDATE_THROTTLE) {
+          console.log('🟡 [SubscriptionService] Update throttled');
+          return;
+        }
+
+        await this.processSnapshot(snapshot);
       });
 
-      return () => this.cleanup();
+      this.activeSubscription = true;
+      console.log('✅ [SubscriptionService] Global subscription active');
     } catch (error) {
-      console.error('❌ Error in chat subscription:', error);
-      throw error;
+      console.error('❌ [SubscriptionService] Error starting subscription:', error);
+      this.activeSubscription = false;
+    }
+  }
+
+  private async processSnapshot(snapshot: any) {
+    try {
+      const chats = snapshot.docs.map((chatDoc: any) => convertToChat(chatDoc));
+
+      const newChatIds = new Set(chats.map(chat => chat.id));
+
+      if (this.lastChatIds.size === newChatIds.size &&
+          [...this.lastChatIds].every(id => newChatIds.has(id))) {
+        console.log('🟡 [SubscriptionService] No new chats detected, skipping update');
+        return;
+      }
+
+      this.lastChatIds = newChatIds;
+      this.lastProcessedUpdate = Date.now();
+
+      this.callbacks.forEach(callback => callback(chats));
+
+      console.log('✅ [SubscriptionService] Update processed:', {
+        chats: chats.length,
+        subscribers: this.callbacks.size
+      });
+    } catch (error) {
+      console.error('❌ [SubscriptionService] Error processing snapshot:', error);
     }
   }
 
   cleanup() {
+    console.log('🔵 [SubscriptionService] Cleaning up');
     if (this.unsubscribeFromChats) {
-      console.log('🔵 Cleaning up subscription service');
       this.unsubscribeFromChats();
       this.unsubscribeFromChats = null;
     }
+    this.activeSubscription = false;
+    this.callbacks.clear();
+    this.lastChatIds.clear();
+    console.log('✅ [SubscriptionService] Cleanup complete');
   }
 }

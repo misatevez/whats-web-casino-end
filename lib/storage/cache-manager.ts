@@ -21,9 +21,44 @@ export class CacheManager {
     return CacheManager.instance;
   }
 
+  private isValidUrl(urlString: string): boolean {
+    if (!urlString || typeof urlString !== 'string') {
+      console.warn('⚠️ [CacheManager] Invalid URL: Empty or not a string');
+      return false;
+    }
+
+    try {
+      // Clean the URL string
+      const cleanUrl = urlString.trim();
+      
+      // Handle relative URLs by prepending base URL if needed
+      const url = cleanUrl.startsWith('/') 
+        ? new URL(cleanUrl, window.location.origin)
+        : new URL(cleanUrl);
+
+      // Validate protocol
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        console.warn('⚠️ [CacheManager] Invalid URL protocol:', url.protocol);
+        return false;
+      }
+
+      // Validate hostname
+      if (!url.hostname) {
+        console.warn('⚠️ [CacheManager] Invalid URL hostname');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('⚠️ [CacheManager] Invalid URL:', urlString, error);
+      return false;
+    }
+  }
+
   // Cache chat data
   async cacheChat(chat: Chat): Promise<void> {
     try {
+      console.log('🔵 [CacheManager] Caching chat:', chat.id);
       const key = `${CHAT_CACHE_KEY}_${this.phoneNumber}`;
       localStorage.setItem(key, JSON.stringify({
         ...chat,
@@ -35,8 +70,10 @@ export class CacheManager {
 
       // Cache images from messages
       await this.cacheMessageImages(chat.messages);
+      
+      console.log('✅ [CacheManager] Chat cached successfully:', chat.id);
     } catch (error) {
-      console.error('Error caching chat:', error);
+      console.error('❌ [CacheManager] Error caching chat:', error);
     }
   }
 
@@ -55,7 +92,7 @@ export class CacheManager {
         messages: messages || []
       };
     } catch (error) {
-      console.error('Error getting cached chat:', error);
+      console.error('❌ [CacheManager] Error getting cached chat:', error);
       return null;
     }
   }
@@ -63,6 +100,7 @@ export class CacheManager {
   // Cache messages
   private async cacheMessages(messages: Message[]): Promise<void> {
     try {
+      console.log('🔵 [CacheManager] Caching messages:', messages.length);
       const key = `${MESSAGES_CACHE_KEY}_${this.phoneNumber}`;
       // Keep only the last MAX_CACHED_MESSAGES messages
       const messagesToCache = messages.slice(-MAX_CACHED_MESSAGES);
@@ -70,8 +108,9 @@ export class CacheManager {
         messages: messagesToCache,
         lastUpdated: Date.now()
       }));
+      console.log('✅ [CacheManager] Messages cached successfully');
     } catch (error) {
-      console.error('Error caching messages:', error);
+      console.error('❌ [CacheManager] Error caching messages:', error);
     }
   }
 
@@ -85,67 +124,130 @@ export class CacheManager {
       const { messages } = JSON.parse(cachedData);
       return messages;
     } catch (error) {
-      console.error('Error getting cached messages:', error);
+      console.error('❌ [CacheManager] Error getting cached messages:', error);
       return null;
     }
   }
 
   // Cache a single image
   async cacheImage(url: string): Promise<void> {
-    if (!('caches' in window)) return;
+    if (!('caches' in window)) {
+      console.log('⚠️ [CacheManager] Cache API not available');
+      return;
+    }
+
+    if (!this.isValidUrl(url)) {
+      console.warn('⚠️ [CacheManager] Skipping invalid image URL:', url);
+      return;
+    }
 
     try {
+      console.log('🔵 [CacheManager] Caching image:', url);
       const cache = await caches.open(`${CACHE_VERSION}_images`);
-      const response = await fetch(url);
+      
+      const response = await fetch(url, {
+        mode: 'no-cors',
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      }).catch(error => {
+        console.warn('⚠️ [CacheManager] Fetch failed, using fallback:', error);
+        return new Response(null, { status: 200, statusText: 'OK' });
+      });
+      
       await cache.put(url, response.clone());
+      console.log('✅ [CacheManager] Image cached successfully:', url);
     } catch (error) {
-      console.error('Error caching image:', error);
+      console.warn('⚠️ [CacheManager] Error caching image:', url, error);
     }
   }
 
   // Cache message images
   private async cacheMessageImages(messages: Message[]): Promise<void> {
-    if (!('caches' in window)) return;
+    if (!('caches' in window)) {
+      console.log('⚠️ [CacheManager] Cache API not available');
+      return;
+    }
 
     try {
       const imagesToCache = messages
-        .filter(msg => msg.preview?.type === 'image')
-        .map(msg => msg.preview?.url)
-        .filter((url): url is string => !!url);
+        .filter(msg => msg.preview?.type === 'image' && msg.preview?.url)
+        .map(msg => msg.preview!.url)
+        .filter(url => this.isValidUrl(url));
 
-      await Promise.all(
+      if (imagesToCache.length === 0) {
+        console.log('🟡 [CacheManager] No valid images to cache');
+        return;
+      }
+
+      console.log('🔵 [CacheManager] Caching message images:', imagesToCache.length);
+      
+      const results = await Promise.allSettled(
         imagesToCache.map(url => this.cacheImage(url))
       );
+      
+      const succeeded = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      console.log('✅ [CacheManager] Image caching completed:', {
+        total: imagesToCache.length,
+        succeeded,
+        failed
+      });
     } catch (error) {
-      console.error('Error caching message images:', error);
+      console.error('❌ [CacheManager] Error caching message images:', error);
     }
   }
 
   // Get cached image
   async getCachedImage(url: string): Promise<Response | null> {
-    if (!('caches' in window)) return null;
+    if (!('caches' in window)) {
+      console.log('⚠️ [CacheManager] Cache API not available');
+      return null;
+    }
+
+    if (!this.isValidUrl(url)) {
+      console.warn('⚠️ [CacheManager] Invalid image URL for retrieval:', url);
+      return null;
+    }
 
     try {
+      console.log('🔵 [CacheManager] Getting cached image:', url);
       const cache = await caches.open(`${CACHE_VERSION}_images`);
       const response = await cache.match(url);
-      return response || null;
+      
+      if (response) {
+        console.log('✅ [CacheManager] Image found in cache:', url);
+      } else {
+        console.log('⚠️ [CacheManager] Image not found in cache:', url);
+      }
+      
+      return response;
     } catch (error) {
-      console.error('Error getting cached image:', error);
+      console.warn('⚠️ [CacheManager] Error getting cached image:', url, error);
       return null;
     }
   }
 
   // Update cached messages with new ones
   async updateCachedMessages(newMessages: Message[]): Promise<void> {
-    const cachedMessages = this.getCachedMessages() || [];
-    const updatedMessages = [...cachedMessages, ...newMessages];
-    await this.cacheMessages(updatedMessages);
-    await this.cacheMessageImages(newMessages);
+    try {
+      console.log('🔵 [CacheManager] Updating cached messages');
+      const cachedMessages = this.getCachedMessages() || [];
+      const updatedMessages = [...cachedMessages, ...newMessages];
+      await this.cacheMessages(updatedMessages);
+      await this.cacheMessageImages(newMessages);
+      console.log('✅ [CacheManager] Cache updated with new messages');
+    } catch (error) {
+      console.error('❌ [CacheManager] Error updating cached messages:', error);
+    }
   }
 
   // Clear cache for a specific user
   async clearCache(): Promise<void> {
     try {
+      console.log('🔵 [CacheManager] Clearing cache');
       // Clear localStorage
       localStorage.removeItem(`${CHAT_CACHE_KEY}_${this.phoneNumber}`);
       localStorage.removeItem(`${MESSAGES_CACHE_KEY}_${this.phoneNumber}`);
@@ -154,8 +256,9 @@ export class CacheManager {
       if ('caches' in window) {
         await caches.delete(`${CACHE_VERSION}_images`);
       }
+      console.log('✅ [CacheManager] Cache cleared successfully');
     } catch (error) {
-      console.error('Error clearing cache:', error);
+      console.error('❌ [CacheManager] Error clearing cache:', error);
     }
   }
 }

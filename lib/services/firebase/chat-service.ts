@@ -6,7 +6,7 @@ import { convertToChat } from './converters';
 export class ChatService {
   async createOrGetChat(phoneNumber: string): Promise<Chat> {
     try {
-      console.log('🔵 Creating/getting chat for phone number:', phoneNumber);
+      console.log('🔵 [ChatService] Creating/getting chat for phone number:', phoneNumber);
       
       // Check if chat already exists
       const chatsRef = collection(db, 'chats');
@@ -14,12 +14,12 @@ export class ChatService {
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
-        console.log('✅ Existing chat found');
+        console.log('✅ [ChatService] Existing chat found');
         return convertToChat(querySnapshot.docs[0]);
       }
 
       // Create new chat
-      console.log('🔵 Creating new chat');
+      console.log('🔵 [ChatService] Creating new chat');
       const chatData = {
         name: phoneNumber,
         phoneNumber,
@@ -36,6 +36,7 @@ export class ChatService {
       const chatId = docRef.id;
 
       // Create welcome message
+      console.log('🔵 [ChatService] Creating welcome message');
       const messagesRef = collection(db, 'chats', chatId, 'messages');
       await addDoc(messagesRef, {
         content: "¡Hola! ¿Cómo podemos ayudarte?",
@@ -45,44 +46,44 @@ export class ChatService {
         timestamp: serverTimestamp()
       });
 
-      console.log('✅ New chat created successfully');
+      console.log('✅ [ChatService] New chat created successfully:', chatId);
       return {
         id: chatId,
         ...chatData,
         messages: []
       } as Chat;
     } catch (error) {
-      console.error('❌ Error creating/getting chat:', error);
+      console.error('❌ [ChatService] Error creating/getting chat:', error);
       throw error;
     }
   }
 
   async updateOnlineStatus(chatId: string, isOnline: boolean): Promise<void> {
     try {
-      console.log('🔵 Updating online status:', { chatId, isOnline });
+      console.log('🔵 [ChatService] Updating online status:', { chatId, isOnline });
       const chatRef = doc(db, 'chats', chatId);
       await updateDoc(chatRef, {
         online: isOnline,
         lastSeen: serverTimestamp()
       });
-      console.log('✅ Online status updated successfully');
+      console.log('✅ [ChatService] Online status updated successfully');
     } catch (error) {
-      console.error('❌ Error updating online status:', error);
+      console.error('❌ [ChatService] Error updating online status:', error);
       throw error;
     }
   }
 
   async updateContactName(chatId: string, newName: string): Promise<void> {
     try {
-      console.log('🔵 Updating contact name:', { chatId, newName });
+      console.log('🔵 [ChatService] Updating contact name:', { chatId, newName });
       const chatRef = doc(db, 'chats', chatId);
       await updateDoc(chatRef, {
         name: newName,
         updatedAt: serverTimestamp()
       });
-      console.log('✅ Contact name updated successfully');
+      console.log('✅ [ChatService] Contact name updated successfully');
     } catch (error) {
-      console.error('❌ Error updating contact name:', error);
+      console.error('❌ [ChatService] Error updating contact name:', error);
       throw error;
     }
   }
