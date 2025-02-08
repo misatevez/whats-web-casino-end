@@ -22,12 +22,20 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if ((!newMessage.trim() && !messagePreview) || isUploading) return;
-    onSendMessage(newMessage, messagePreview);
-    setNewMessage("");
-    setMessagePreview(null);
+    if ((!newMessage.trim() && !messagePreview) || isUploading) {
+      return;
+    }
+
+    try {
+      await onSendMessage(newMessage.trim(), messagePreview);
+      setNewMessage("");
+      setMessagePreview(null);
+    } catch (error) {
+      console.error('❌ Error sending message:', error);
+      toast.error('Failed to send message');
+    }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +77,8 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
       setIsUploading(false);
       setUploadProgress(0);
     } catch (error) {
-      toast.error('Error al subir el archivo');
+      console.error('❌ Error uploading file:', error);
+      toast.error('Failed to upload file');
       setMessagePreview(null);
       setIsUploading(false);
       setUploadProgress(0);
@@ -124,17 +133,17 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
             <div className="flex flex-col">
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <ImageIcon className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Fotos y Videos</span>
+                <span className="text-[#d1d7db] text-sm">Photos & Videos</span>
                 <input type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
               </label>
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <Camera className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Cámara</span>
+                <span className="text-[#d1d7db] text-sm">Camera</span>
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} />
               </label>
               <label className="flex items-center gap-3 px-3 py-2 hover:bg-[#182229] cursor-pointer rounded transition-colors">
                 <File className="h-5 w-5 text-[#8696a0]" />
-                <span className="text-[#d1d7db] text-sm">Documento</span>
+                <span className="text-[#d1d7db] text-sm">Document</span>
                 <input type="file" className="hidden" onChange={handleFileSelect} />
               </label>
             </div>
@@ -188,7 +197,7 @@ export function MessageInput({ onSendMessage }: MessageInputProps) {
               handleSubmit(e);
             }
           }}
-          placeholder="Escribe un mensaje"
+          placeholder="Type a message"
           className="flex-1 bg-[#2a3942] border-none text-[#d1d7db] placeholder:text-[#8696a0] text-sm sm:text-base h-9 sm:h-10"
           disabled={isUploading}
         />

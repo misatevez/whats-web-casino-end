@@ -34,5 +34,14 @@ export async function createOrGetChat(phoneNumber: string): Promise<Chat> {
 
 // Send message
 export async function sendMessage(chatId: string, content: string, preview: MessagePreview | null = null, isFromAdmin: boolean = false): Promise<void> {
-  return firebaseService.sendMessage(chatId, content, preview, isFromAdmin);
+  try {
+    if (isFromAdmin) {
+      return firebaseService.sendAdminMessage(chatId, content, preview);
+    } else {
+      return firebaseService.sendUserMessage(chatId, content, preview);
+    }
+  } catch (error) {
+    console.error('❌ Error sending message:', error);
+    throw error;
+  }
 }

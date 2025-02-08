@@ -133,10 +133,11 @@ export default function ChatPage() {
 
     try {
       console.log('🔵 Sending message:', { content, preview });
-      await firebaseService?.sendMessage(chat.id, content, preview, false);
+      await firebaseService?.sendMessage(chat.id, content, preview);
       console.log('✅ Message sent successfully');
     } catch (error) {
       console.error('❌ Error sending message:', error);
+      throw error;
     }
   };
 

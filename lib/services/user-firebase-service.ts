@@ -33,17 +33,16 @@ export class UserFirebaseService {
   subscribeToChatUpdates(phoneNumber: string, callback: (chat: Chat | null) => void) {
     this.initializeCache(phoneNumber);
 
-    // Primero intentamos cargar desde caché
+    // First try to load from cache
     const cachedChat = this.cacheManager?.getCachedChat();
     if (cachedChat) {
-      console.log('🔵 Chat loaded from cache');
+      console.log('✅ Chat loaded from cache');
       callback(cachedChat);
     }
 
-    // Luego nos suscribimos a actualizaciones en tiempo real
+    // Then subscribe to real-time updates
     return this.subscriptionService.subscribeToChatUpdates(phoneNumber, async (chat) => {
       if (chat) {
-        // Actualizamos el caché con los nuevos datos
         await this.cacheManager?.cacheChat(chat);
       }
       callback(chat);
@@ -52,7 +51,6 @@ export class UserFirebaseService {
 
   async loadMoreMessages(chatId: string, lastMessageId: string): Promise<Message[]> {
     const messages = await this.messageService.loadMoreMessages(chatId, lastMessageId);
-    // Actualizamos el caché con los mensajes antiguos
     await this.cacheManager?.updateCachedMessages(messages);
     return messages;
   }
@@ -60,14 +58,12 @@ export class UserFirebaseService {
   async getUserChat(phoneNumber: string): Promise<Chat | null> {
     this.initializeCache(phoneNumber);
     
-    // Primero intentamos obtener del caché
     const cachedChat = this.cacheManager?.getCachedChat();
     if (cachedChat) {
-      console.log('🔵 Chat found in cache');
+      console.log('✅ Chat found in cache');
       return cachedChat;
     }
 
-    // Si no está en caché, lo obtenemos de Firebase
     const chat = await this.chatService.getUserChat(phoneNumber);
     if (chat) {
       await this.cacheManager?.cacheChat(chat);
@@ -82,8 +78,19 @@ export class UserFirebaseService {
     return chat;
   }
 
-  async sendMessage(chatId: string, content: string, preview: MessagePreview | null = null, isFromAdmin: boolean = false): Promise<void> {
-    await this.messageService.sendMessage(chatId, content, preview, isFromAdmin);
+  async sendMessage(chatId: string, content: string, preview: MessagePreview | null = null): Promise<void> {
+    try {
+      console.log('🔵 [UserFirebaseService] Sending user message:', {
+        chatId,
+        hasContent: !!content,
+        hasPreview: !!preview
+      });
+      await this.messageService.sendUserMessage(chatId, content, preview);
+      console.log('✅ [UserFirebaseService] Message sent successfully');
+    } catch (error) {
+      console.error('❌ [UserFirebaseService] Error sending message:', error);
+      throw error;
+    }
   }
 
   async updateOnlineStatus(chatId: string, isOnline: boolean): Promise<void> {

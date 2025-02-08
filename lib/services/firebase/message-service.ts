@@ -10,7 +10,6 @@ export class MessageService {
     try {
       console.log('🔵 [MessageService] Loading more messages:', { chatId, lastMessageId });
       
-      // Get the last message document
       const lastMessageRef = doc(db, 'chats', chatId, 'messages', lastMessageId);
       const lastMessageDoc = await getDoc(lastMessageRef);
       
@@ -19,7 +18,6 @@ export class MessageService {
         throw new Error('Last message not found');
       }
 
-      // Query for older messages
       const messagesRef = collection(db, 'chats', chatId, 'messages');
       const q = query(
         messagesRef,
@@ -41,23 +39,45 @@ export class MessageService {
     }
   }
 
+  private async validateChat(chatId: string): Promise<void> {
+    const chatRef = doc(db, 'chats', chatId);
+    const chatDoc = await getDoc(chatRef);
+    
+    if (!chatDoc.exists()) {
+      console.error('❌ [MessageService] Chat not found:', chatId);
+      throw new Error('Chat not found');
+    }
+  }
+
   async sendMessage(chatId: string, content: string, preview: MessagePreview | null = null, isFromAdmin: boolean = false): Promise<void> {
     try {
+      if (!chatId) {
+        throw new Error('Chat ID is required');
+      }
+
+      if (!content.trim() && !preview) {
+        throw new Error('Message content or preview is required');
+      }
+
+      // Validate chat exists
+      await this.validateChat(chatId);
+
       console.log('🔵 [MessageService] Sending message:', { 
         chatId, 
         hasContent: !!content, 
-        hasPreview: !!preview, 
-        isFromAdmin 
+        hasPreview: !!preview,
+        isFromAdmin,
+        timestamp: new Date().toISOString()
       });
 
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const chatRef = doc(db, 'chats', chatId);
-      const messagesRef = collection(chatRef, 'messages');
+      const messagesRef = collection(db, 'chats', chatId, 'messages');
       
       const messageData = {
-        content: preview ? '' : content,
+        content: preview ? '' : content.trim(),
         time,
-        sent: !isFromAdmin,
+        sent: !isFromAdmin, // false for admin messages, true for user messages
         status: "sent",
         preview: preview || null,
         timestamp: serverTimestamp()
@@ -67,16 +87,16 @@ export class MessageService {
       const messageDoc = await addDoc(messagesRef, messageData);
       console.log('✅ [MessageService] Message added:', messageDoc.id);
 
-      // Update the chat with the last message info
+      // Update chat with last message info
       const lastMessage = preview ? 
         preview.type === 'image' ? '📷 Photo' : `📄 ${preview.name}` :
-        content;
+        content.trim();
 
       await updateDoc(chatRef, {
         lastMessage,
         time,
         lastMessageTime: serverTimestamp(),
-        unread: isFromAdmin ? 1 : 0
+        unread: isFromAdmin ? 1 : 0 // Increment unread only for admin messages
       });
 
       console.log('✅ [MessageService] Chat updated with last message');
@@ -84,5 +104,13 @@ export class MessageService {
       console.error('❌ [MessageService] Error sending message:', error);
       throw error;
     }
+  }
+
+  async sendUserMessage(chatId: string, content: string, preview: MessagePreview | null = null): Promise<void> {
+    return this.sendMessage(chatId, content, preview, false);
+  }
+
+  async sendAdminMessage(chatId: string, content: string, preview: MessagePreview | null = null): Promise<void> {
+    return this.sendMessage(chatId, content, preview, true);
   }
 }

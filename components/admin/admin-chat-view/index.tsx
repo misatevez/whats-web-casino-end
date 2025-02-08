@@ -1,13 +1,13 @@
 "use client";
 
 import { Chat } from "@/lib/types";
-import { MessageList } from "../admin-chat-view/message-list";
-import { MessageSearch } from "../admin-chat-view/message-search";
+import { MessageList } from "./message-list";
+import { MessageSearch } from "./message-search";
 import { ChatHeader } from "@/components/chat/chat-header";
 import { MessageInput } from "@/components/chat/message-input";
 import { ImageViewerDialog } from "@/components/chat/image-viewer-dialog";
 import { useMessageSearch } from "@/hooks/use-message-search";
-import { useChatView } from "@/hooks/use-chat-view";
+import { useAdminChatView } from "@/hooks/use-chat-view";
 
 interface AdminChatViewProps {
   chat: Chat;
@@ -28,7 +28,7 @@ export function AdminChatView({ chat, onInfoClick }: AdminChatViewProps) {
     setSelectedImage,
     handleSendMessage,
     handleImageClick
-  } = useChatView(chat);
+  } = useAdminChatView(chat);
 
   const {
     showSearch,

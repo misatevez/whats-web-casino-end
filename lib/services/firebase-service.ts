@@ -39,8 +39,46 @@ export class FirebaseService implements FirebaseServiceInterface {
     return this.chatService.createOrGetChat(phoneNumber);
   }
 
-  async sendMessage(chatId: string, content: string, preview: MessagePreview | null = null, isFromAdmin: boolean = false): Promise<void> {
-    return this.messageService.sendMessage(chatId, content, preview, isFromAdmin);
+  async sendUserMessage(chatId: string, content: string, preview: MessagePreview | null = null): Promise<void> {
+    if (!chatId) {
+      console.error('❌ [FirebaseService] Chat ID is required');
+      throw new Error('Chat ID is required');
+    }
+
+    try {
+      console.log('🔵 [FirebaseService] Sending user message:', {
+        chatId,
+        hasContent: !!content,
+        hasPreview: !!preview,
+        service: 'MessageService.sendUserMessage'
+      });
+      await this.messageService.sendUserMessage(chatId, content, preview);
+      console.log('✅ [FirebaseService] User message sent successfully');
+    } catch (error) {
+      console.error('❌ [FirebaseService] Error sending user message:', error);
+      throw error;
+    }
+  }
+
+  async sendAdminMessage(chatId: string, content: string, preview: MessagePreview | null = null): Promise<void> {
+    if (!chatId) {
+      console.error('❌ [FirebaseService] Chat ID is required');
+      throw new Error('Chat ID is required');
+    }
+
+    try {
+      console.log('🔵 [FirebaseService] Sending admin message:', {
+        chatId,
+        hasContent: !!content,
+        hasPreview: !!preview,
+        service: 'MessageService.sendAdminMessage'
+      });
+      await this.messageService.sendAdminMessage(chatId, content, preview);
+      console.log('✅ [FirebaseService] Admin message sent successfully');
+    } catch (error) {
+      console.error('❌ [FirebaseService] Error sending admin message:', error);
+      throw error;
+    }
   }
 
   async updateOnlineStatus(chatId: string, isOnline: boolean): Promise<void> {

@@ -1,21 +1,21 @@
 "use client";
 
 import { Chat } from "@/lib/types";
-import { MessageList } from "./admin-chat-view/message-list";
-import { MessageSearch } from "./admin-chat-view/message-search";
-import { ChatHeader } from "@/components/chat/chat-header";
-import { MessageInput } from "@/components/chat/message-input";
-import { ImageViewerDialog } from "@/components/chat/image-viewer-dialog";
+import { MessageList } from "./message-list";
+import { MessageSearchHeader } from "./message-search-header";
+import { ChatHeader } from "./chat-header";
+import { MessageInput } from "./message-input";
+import { ImageViewerDialog } from "./image-viewer-dialog";
 import { useMessageSearch } from "@/hooks/use-message-search";
-import { useAdminChatView } from "@/hooks/use-chat-view";
+import { useUserChatView } from "@/hooks/use-chat-view";
 
-interface AdminChatViewProps {
+interface ChatViewProps {
   chat: Chat;
   onInfoClick: () => void;
 }
 
-export function AdminChatView({ chat, onInfoClick }: AdminChatViewProps) {
-  console.log('🔵 [AdminChatView] Rendering for chat:', {
+export function ChatView({ chat, onInfoClick }: ChatViewProps) {
+  console.log('🔵 [ChatView] Rendering for chat:', {
     chatId: chat.id,
     name: chat.name,
     messageCount: chat.messages.length
@@ -28,7 +28,7 @@ export function AdminChatView({ chat, onInfoClick }: AdminChatViewProps) {
     setSelectedImage,
     handleSendMessage,
     handleImageClick
-  } = useAdminChatView(chat);
+  } = useUserChatView(chat);
 
   const {
     showSearch,
@@ -45,7 +45,7 @@ export function AdminChatView({ chat, onInfoClick }: AdminChatViewProps) {
   return (
     <div className="flex-1 flex flex-col">
       {showSearch ? (
-        <MessageSearch
+        <MessageSearchHeader
           searchTerm={messageSearchTerm}
           onSearchChange={setMessageSearchTerm}
           onClose={handleSearchClose}

@@ -20,14 +20,12 @@ export function ChatMessage({ message, onImageClick }: ChatMessageProps) {
     try {
       const toastId = toast.loading('Starting download...');
       
-      // Create a link element and trigger download
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename; // Set suggested filename
-      link.target = '_blank'; // Open in new tab as fallback
-      link.rel = 'noopener noreferrer'; // Security best practice
+      link.download = filename;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       
-      // Append to document, click, and cleanup
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -40,7 +38,6 @@ export function ChatMessage({ message, onImageClick }: ChatMessageProps) {
       console.log('❌ Message preview:', message.preview);
       toast.error('Failed to download. Opening in new tab...');
       
-      // Fallback: Open in new tab
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
