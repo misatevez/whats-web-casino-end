@@ -20,22 +20,9 @@ export default function AdminChat() {
     isLoading,
     filteredChats,
 
-    // Status management
-    showStatusUpload,
-    setShowStatusUpload,
-    showStatusViewer,
-    setShowStatusViewer,
-    handleStatusUpload,
-    handleStatusDelete,
-
     // Contact management
     showContactInfo,
     setShowContactInfo,
-    showAddNumber,
-    setShowAddNumber,
-    newPhoneNumber,
-    setNewPhoneNumber,
-    handleAddNewNumber,
     handleSaveContact,
 
     // Handlers
@@ -57,9 +44,6 @@ export default function AdminChat() {
         onChatSelect={setSelectedChat}
         onSaveContact={handleSaveContact}
         onProfileClick={() => setShowProfileSettings(true)}
-        onStatusClick={() => setShowStatusUpload(true)}
-        onViewStatus={() => setShowStatusViewer(true)}
-        onAddNumberClick={() => setShowAddNumber(true)}
         onLogout={handleLogout}
       />
 
@@ -73,20 +57,9 @@ export default function AdminChat() {
         setShowProfileSettings={setShowProfileSettings}
         showContactInfo={showContactInfo}
         setShowContactInfo={setShowContactInfo}
-        showStatusUpload={showStatusUpload}
-        setShowStatusUpload={setShowStatusUpload}
-        showStatusViewer={showStatusViewer}
-        setShowStatusViewer={setShowStatusViewer}
-        showAddNumber={showAddNumber}
-        setShowAddNumber={setShowAddNumber}
         adminData={adminData}
         setAdminData={setAdminData}
         selectedChat={selectedChat}
-        newPhoneNumber={newPhoneNumber}
-        setNewPhoneNumber={setNewPhoneNumber}
-        handleAddNumber={handleAddNewNumber}
-        handleStatusUpload={handleStatusUpload}
-        handleStatusDelete={handleStatusDelete}
       />
     </div>
   );

@@ -9,10 +9,8 @@ import { AdminChatList } from "@/components/admin/admin-chat-list";
 import { AdminChatView } from "@/components/admin/admin-chat-view";
 import { AdminProfileDialog } from "@/components/admin/admin-profile-dialog";
 import { AdminContactDialog } from "@/components/admin/admin-contact-dialog";
-import { AdminStatusDialog } from "@/components/admin/admin-status-dialog";
-import { AdminAddNumberDialog } from "@/components/admin/admin-add-number-dialog";
 import { getAdminProfile, subscribeToChats } from "@/lib/data";
-import { Chat, Status, UserProfile, initialAdminProfile } from "@/lib/types";
+import { Chat, UserProfile, initialAdminProfile } from "@/lib/types";
 
 export default function AdminChat() {
   const router = useRouter();
@@ -20,12 +18,7 @@ export default function AdminChat() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showContactInfo, setShowContactInfo] = useState(false);
   const [showProfileSettings, setShowProfileSettings] = useState(false);
-  const [showStatusViewer, setShowStatusViewer] = useState(false);
-  const [showStatusUpload, setShowStatusUpload] = useState(false);
-  const [showAddNumber, setShowAddNumber] = useState(false);
-  const [newPhoneNumber, setNewPhoneNumber] = useState("");
   const [adminData, setAdminData] = useState<UserProfile>(initialAdminProfile);
-  const [newContactName, setNewContactName] = useState("");
   const [chats, setChats] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -69,30 +62,8 @@ export default function AdminChat() {
     router.push("/admin");
   };
 
-  const handleAddNumber = () => {
-    if (newPhoneNumber.trim()) {
-      const newContact: Chat = {
-        id: Date.now().toString(),
-        name: newPhoneNumber,
-        phoneNumber: newPhoneNumber,
-        lastMessage: "",
-        time: "Just now",
-        unread: 0,
-        avatar: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-        online: false,
-        messages: []
-      };
-      setNewPhoneNumber("");
-      setShowAddNumber(false);
-      setSelectedChat(newContact);
-    }
-  };
-
   const handleSaveContact = (chat: Chat) => {
-    if (newContactName.trim()) {
-      chat.name = newContactName;
-      setNewContactName("");
-    }
+    return false;
   };
 
   const filteredChats = chats.filter(chat => 
@@ -115,9 +86,6 @@ export default function AdminChat() {
         <AdminHeader
           profile={adminData}
           onProfileClick={() => setShowProfileSettings(true)}
-          onStatusClick={() => setShowStatusUpload(true)}
-          onViewStatus={() => setShowStatusViewer(true)}
-          onAddNumberClick={() => setShowAddNumber(true)}
           onLogout={handleLogout}
         />
 
@@ -196,21 +164,6 @@ export default function AdminChat() {
         open={showContactInfo}
         onOpenChange={setShowContactInfo}
         chat={selectedChat}
-      />
-
-      <AdminStatusDialog
-        open={showStatusViewer}
-        onOpenChange={setShowStatusViewer}
-        statuses={adminData.statuses || []}
-        viewOnly={true}
-      />
-
-      <AdminAddNumberDialog
-        open={showAddNumber}
-        onOpenChange={setShowAddNumber}
-        phoneNumber={newPhoneNumber}
-        onPhoneNumberChange={setNewPhoneNumber}
-        onAdd={handleAddNumber}
       />
     </div>
   );

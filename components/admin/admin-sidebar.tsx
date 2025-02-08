@@ -15,9 +15,6 @@ interface AdminSidebarProps {
   onChatSelect: (chat: Chat) => void;
   onSaveContact: (chat: Chat) => void;
   onProfileClick: () => void;
-  onStatusClick: () => void;
-  onViewStatus: () => void;
-  onAddNumberClick: () => void;
   onLogout: () => void;
 }
 
@@ -30,9 +27,6 @@ export function AdminSidebar({
   onChatSelect,
   onSaveContact,
   onProfileClick,
-  onStatusClick,
-  onViewStatus,
-  onAddNumberClick,
   onLogout
 }: AdminSidebarProps) {
   return (
@@ -40,9 +34,6 @@ export function AdminSidebar({
       <AdminHeader
         profile={profile}
         onProfileClick={onProfileClick}
-        onStatusClick={onStatusClick}
-        onViewStatus={onViewStatus}
-        onAddNumberClick={onAddNumberClick}
         onLogout={onLogout}
       />
 
