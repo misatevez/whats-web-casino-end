@@ -1,9 +1,8 @@
-import { collection, query, orderBy, onSnapshot, limit, getDocs, where } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, limit, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Chat } from '@/lib/types';
 import { convertToChat, convertToMessage } from './converters';
 import { ChatSubscriptionCallback } from './types';
-import { getStoredPhoneNumber } from '@/lib/storage/local-storage';
 
 export class SubscriptionService {
   private unsubscribeFromChats: (() => void) | null = null;
@@ -12,19 +11,10 @@ export class SubscriptionService {
   subscribeToChatUpdates(callback: ChatSubscriptionCallback) {
     try {
       console.log('🔵 Starting chat subscription');
-      const phoneNumber = getStoredPhoneNumber();
-      
-      if (!phoneNumber) {
-        console.log('❌ No phone number found in storage');
-        callback([]);
-        return () => {};
-      }
-
       const chatsRef = collection(db, 'chats');
-      // Query only chats for this phone number
+      // Query all chats ordered by last message time
       const q = query(
-        chatsRef, 
-        where('phoneNumber', '==', phoneNumber),
+        chatsRef,
         orderBy('lastMessageTime', 'desc')
       );
 
