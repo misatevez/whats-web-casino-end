@@ -1,4 +1,4 @@
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { UserProfile } from '../types';
@@ -55,6 +55,21 @@ export async function updateUserProfile(phoneNumber: string, profile: Partial<Us
         updatedAt: new Date()
       });
     }
+
+    // If profile update includes an image, update chat avatar as well
+    if (profile.image) {
+      const chatsRef = collection(db, 'chats');
+      const q = query(chatsRef, where('phoneNumber', '==', phoneNumber));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const chatDoc = querySnapshot.docs[0];
+        await updateDoc(doc(db, 'chats', chatDoc.id), {
+          avatar: profile.image,
+          updatedAt: new Date()
+        });
+      }
+    }
   } catch (error) {
     console.error('Error updating user profile:', error);
     throw error;
@@ -64,6 +79,7 @@ export async function updateUserProfile(phoneNumber: string, profile: Partial<Us
 // Upload profile image
 export async function uploadProfileImage(phoneNumber: string, file: File): Promise<string> {
   try {
+    console.log('🔵 Starting profile image upload for:', phoneNumber);
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop();
     const fileName = `profiles/${phoneNumber}_${timestamp}.${fileExtension}`;
@@ -92,10 +108,26 @@ export async function uploadProfileImage(phoneNumber: string, file: File): Promi
         updatedAt: new Date()
       });
     }
+
+    // Update chat avatar
+    console.log('🔵 Updating chat avatar for:', phoneNumber);
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('phoneNumber', '==', phoneNumber));
+    const querySnapshot = await getDocs(q);
     
+    if (!querySnapshot.empty) {
+      const chatDoc = querySnapshot.docs[0];
+      await updateDoc(doc(db, 'chats', chatDoc.id), {
+        avatar: downloadURL,
+        updatedAt: new Date()
+      });
+      console.log('✅ Chat avatar updated successfully');
+    }
+    
+    console.log('✅ Profile image upload completed');
     return downloadURL;
   } catch (error) {
-    console.error('Error uploading profile image:', error);
+    console.error('❌ Error uploading profile image:', error);
     throw error;
   }
 }
