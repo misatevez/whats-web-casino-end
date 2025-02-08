@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
@@ -21,16 +22,38 @@ export function ChatList({
   onSaveContact,
   showAbout 
 }: ChatListProps) {
-  console.log('🔵 [ChatList] Rendering with:', {
-    totalChats: chats.length,
-    selectedChatId
-  });
+  // Track last messages to detect changes
+  const [lastMessages, setLastMessages] = useState<Record<string, string>>({});
+  // Track which chats have new messages
+  const [newMessages, setNewMessages] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    chats.forEach(chat => {
+      // If we have a last message stored
+      if (lastMessages[chat.id]) {
+        // If the message changed and it's not the selected chat
+        if (lastMessages[chat.id] !== chat.lastMessage && chat.id !== selectedChatId) {
+          setNewMessages(prev => ({
+            ...prev,
+            [chat.id]: true
+          }));
+        }
+      }
+      
+      // Update last message
+      setLastMessages(prev => ({
+        ...prev,
+        [chat.id]: chat.lastMessage
+      }));
+    });
+  }, [chats, selectedChatId]);
 
   const handleChatClick = (chat: Chat) => {
-    console.log('🔵 [ChatList] Chat clicked:', {
-      chatId: chat.id,
-      wasSelected: selectedChatId === chat.id
-    });
+    // Clear new message state when selecting chat
+    setNewMessages(prev => ({
+      ...prev,
+      [chat.id]: false
+    }));
     onChatSelect(chat);
   };
 
@@ -38,12 +61,8 @@ export function ChatList({
     <div className="space-y-1">
       {chats.map((chat) => {
         const isSelected = selectedChatId === chat.id;
-        console.log('🔵 [ChatList] Rendering chat item:', {
-          chatId: chat.id,
-          isSelected,
-          name: chat.name
-        });
-
+        const hasNewMessage = newMessages[chat.id];
+        
         return (
           <div
             key={chat.id}
@@ -60,8 +79,6 @@ export function ChatList({
                   width={48}
                   height={48}
                   className="rounded-full"
-                  onLoad={() => console.log('✅ [ChatList] Avatar loaded:', chat.id)}
-                  onError={() => console.error('❌ [ChatList] Avatar load error:', chat.id)}
                 />
               </Avatar>
               {chat.online && (
@@ -76,17 +93,25 @@ export function ChatList({
             <div className="flex-1 min-w-0">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-[#e9edef] font-medium truncate">
+                  <span className={`font-medium truncate ${
+                    !isSelected && hasNewMessage ? "text-white" : "text-[#e9edef]"
+                  }`}>
                     {chat.name}
                   </span>
                   {chat.online && (
                     <span className="text-[#00a884] text-xs">online</span>
                   )}
                 </div>
-                <span className="text-xs text-[#8696a0]">{chat.time}</span>
+                <span className={`text-xs ${
+                  !isSelected && hasNewMessage ? "text-white" : "text-[#8696a0]"
+                }`}>
+                  {chat.time}
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[#8696a0] truncate">
+                <span className={`text-sm truncate ${
+                  !isSelected && hasNewMessage ? "text-white font-medium" : "text-[#8696a0]"
+                }`}>
                   {showAbout ? (chat.about || "Hey there! I am using WhatsApp") : chat.lastMessage}
                 </span>
               </div>

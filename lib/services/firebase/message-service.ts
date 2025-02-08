@@ -1,3 +1,5 @@
+"use client";
+
 import { collection, query, orderBy, limit, startAfter, doc, getDoc, addDoc, updateDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Message, MessagePreview } from '@/lib/types';
@@ -77,28 +79,38 @@ export class MessageService {
       const messageData = {
         content: preview ? '' : content.trim(),
         time,
-        sent: !isFromAdmin, // false for admin messages, true for user messages
+        sent: !isFromAdmin,
         status: "sent",
         preview: preview || null,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
+        unread: true
       };
 
       // Add the message
       const messageDoc = await addDoc(messagesRef, messageData);
       console.log('✅ [MessageService] Message added:', messageDoc.id);
 
+      // Get current unread count
+      const chatDoc = await getDoc(chatRef);
+      const currentUnread = chatDoc.data()?.unread || 0;
+
       // Update chat with last message info
       const lastMessage = preview ? 
         preview.type === 'image' ? '📷 Photo' : `📄 ${preview.name}` :
         content.trim();
 
-      await updateDoc(chatRef, {
+      const updates = {
         lastMessage,
         time,
-        lastMessageTime: serverTimestamp(),
-        unread: isFromAdmin ? 1 : 0 // Increment unread only for admin messages
-      });
+        lastMessageTime: serverTimestamp()
+      };
 
+      // Only update unread count for user messages
+      if (!isFromAdmin) {
+        updates['unread'] = currentUnread + 1;
+      }
+
+      await updateDoc(chatRef, updates);
       console.log('✅ [MessageService] Chat updated with last message');
     } catch (error) {
       console.error('❌ [MessageService] Error sending message:', error);
@@ -112,5 +124,21 @@ export class MessageService {
 
   async sendAdminMessage(chatId: string, content: string, preview: MessagePreview | null = null): Promise<void> {
     return this.sendMessage(chatId, content, preview, true);
+  }
+
+  async markMessagesAsRead(chatId: string): Promise<void> {
+    try {
+      console.log('🔵 [MessageService] Marking messages as read:', chatId);
+      const chatRef = doc(db, 'chats', chatId);
+      
+      await updateDoc(chatRef, {
+        unread: 0
+      });
+      
+      console.log('✅ [MessageService] Messages marked as read');
+    } catch (error) {
+      console.error('❌ [MessageService] Error marking messages as read:', error);
+      throw error;
+    }
   }
 }

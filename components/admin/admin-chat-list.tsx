@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Chat } from "@/lib/types";
 import { ChatList } from "@/components/chat/chat-list";
+import { FirebaseService } from "@/lib/services/firebase-service";
 
 interface AdminChatListProps {
   chats: Chat[];
@@ -31,12 +32,24 @@ export function AdminChatList({
     searchTerm
   });
 
-  const handleChatSelect = (chat: Chat) => {
+  const handleChatSelect = async (chat: Chat) => {
     console.log('🔵 [AdminChatList] Chat selected:', {
       chatId: chat.id,
       previouslySelected: selectedChatId === chat.id
     });
+
+    // First call onChatSelect to update UI immediately
     onChatSelect(chat);
+
+    // Then mark as read if needed
+    if (chat.unread > 0) {
+      try {
+        const firebaseService = FirebaseService.getInstance();
+        await firebaseService.markChatAsRead(chat.id);
+      } catch (error) {
+        console.error('❌ [AdminChatList] Error marking chat as read:', error);
+      }
+    }
   };
 
   return (

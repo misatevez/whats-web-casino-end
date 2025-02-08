@@ -12,5 +12,6 @@ export interface FirebaseServiceInterface {
   sendAdminMessage(chatId: string, content: string, preview: MessagePreview | null): Promise<void>;
   updateOnlineStatus(chatId: string, isOnline: boolean): Promise<void>;
   updateContactName(chatId: string, newName: string): Promise<void>;
+  markChatAsRead(chatId: string): Promise<void>;
   cleanup(): void;
 }

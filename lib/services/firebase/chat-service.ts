@@ -87,4 +87,18 @@ export class ChatService {
       throw error;
     }
   }
+
+  async markChatAsRead(chatId: string): Promise<void> {
+    try {
+      console.log('🔵 [ChatService] Marking chat as read:', chatId);
+      const chatRef = doc(db, 'chats', chatId);
+      await updateDoc(chatRef, {
+        unread: 0
+      });
+      console.log('✅ [ChatService] Chat marked as read');
+    } catch (error) {
+      console.error('❌ [ChatService] Error marking chat as read:', error);
+      throw error;
+    }
+  }
 }

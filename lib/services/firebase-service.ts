@@ -89,6 +89,18 @@ export class FirebaseService implements FirebaseServiceInterface {
     return this.chatService.updateContactName(chatId, newName);
   }
 
+  async markChatAsRead(chatId: string): Promise<void> {
+    try {
+      console.log('🔵 [FirebaseService] Marking chat as read:', chatId);
+      await this.chatService.markChatAsRead(chatId);
+      await this.messageService.markMessagesAsRead(chatId);
+      console.log('✅ [FirebaseService] Chat marked as read successfully');
+    } catch (error) {
+      console.error('❌ [FirebaseService] Error marking chat as read:', error);
+      throw error;
+    }
+  }
+
   cleanup() {
     console.log('🔵 [FirebaseService] Cleaning up service');
     this.subscriptionService.cleanup();
