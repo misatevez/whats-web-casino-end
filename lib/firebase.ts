@@ -1,8 +1,10 @@
 import { initializeApp, getApp, FirebaseApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getAuth, Auth } from 'firebase/auth';
 
 let firebaseApp: FirebaseApp;
+let auth: Auth;
 
 const firebaseConfig = {
   apiKey: "AIzaSyBLb2OYl5W2cnlg9ieqONwhu80fFcPsxqI",
@@ -19,6 +21,12 @@ export function initializeFirebase() {
   } catch {
     firebaseApp = initializeApp(firebaseConfig);
   }
+
+  // Initialize auth if not already initialized
+  if (!auth) {
+    auth = getAuth(firebaseApp);
+  }
+
   return firebaseApp;
 }
 
@@ -29,4 +37,4 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 console.log('✅ Firebase inicializado');
 
-export { db, storage };
+export { db, storage, auth };
