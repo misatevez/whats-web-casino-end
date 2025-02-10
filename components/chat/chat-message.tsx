@@ -1,120 +1,71 @@
-"use client";
+"use client"
 
-import { Check, Download, File } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
-import { Message } from "@/lib/types";
-import { toast } from "sonner";
+import Image from "next/image"
+import { useState } from "react"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
 
-interface ChatMessageProps {
-  message: Message;
-  onImageClick?: (url: string) => void;
+interface MessageProps {
+  message: {
+    id: string
+    text: string
+    isUser: boolean
+    timestamp: number
+  }
 }
 
-export function ChatMessage({ message, onImageClick }: ChatMessageProps) {
-  const isAdmin = !message.sent;
-  
-  const handleDownload = async (url: string, filename: string) => {
-    console.log('🔵 Starting download:', { url, filename });
-    
-    try {
-      const toastId = toast.loading('Starting download...');
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.dismiss(toastId);
-      toast.success('Download started');
-      console.log('✅ Download initiated successfully');
-    } catch (error) {
-      console.error('❌ Error downloading file:', error);
-      console.log('❌ Message preview:', message.preview);
-      toast.error('Failed to download. Opening in new tab...');
-      
-      window.open(url, '_blank', 'noopener,noreferrer');
+export function ChatMessage({ message }: MessageProps) {
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const formattedTime = new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+
+  const isFile = message.text.startsWith("[File:")
+  const fileMatch = isFile ? message.text.match(/\[File: (.*?)\]$$(.*?)$$/) : null
+  const fileType = fileMatch ? fileMatch[1] : ""
+  const fileUrl = fileMatch ? fileMatch[2] : ""
+
+  const renderContent = () => {
+    if (isFile) {
+      if (fileType.startsWith("image/")) {
+        return (
+          <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+            <DialogTrigger asChild>
+              <Image
+                src={fileUrl || "/placeholder.svg"}
+                alt="Uploaded image"
+                width={200}
+                height={200}
+                className="cursor-pointer rounded-md"
+              />
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl">
+              <Image
+                src={fileUrl || "/placeholder.svg"}
+                alt="Uploaded image"
+                width={800}
+                height={600}
+                className="w-full h-auto"
+              />
+            </DialogContent>
+          </Dialog>
+        )
+      } else {
+        return (
+          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+            Download {fileType}
+          </a>
+        )
+      }
+    } else {
+      return <p className="text-sm text-primary">{message.text}</p>
     }
-  };
-  
+  }
+
   return (
-    <div
-      className={`flex ${
-        isAdmin ? "justify-start" : "justify-end"
-      }`}
-    >
-      <div
-        className={`max-w-[60%] rounded-lg p-3 ${
-          isAdmin ? "bg-[#202c33]" : "bg-[#005c4b]"
-        }`}
-      >
-        {message.preview ? (
-          message.preview.type === 'image' ? (
-            <div className="space-y-2">
-              <div
-                className="cursor-pointer"
-                onClick={() => onImageClick?.(message.preview!.url)}
-              >
-                <Image
-                  src={message.preview.url}
-                  alt="Preview"
-                  width={300}
-                  height={200}
-                  className="rounded-lg"
-                />
-              </div>
-              {message.content && (
-                <p className="text-[#e9edef] mt-2">{message.content}</p>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 bg-[#2a3942] p-3 rounded-lg">
-              <File className="h-8 w-8 text-[#8696a0]" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[#e9edef] truncate">{message.preview.name}</p>
-                <p className="text-[#8696a0] text-sm">{message.preview.size}</p>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-[#00a884] hover:text-[#02906f] hover:bg-[#202c33] transition-colors"
-                onClick={() => {
-                  console.log('🔵 Download button clicked', {
-                    url: message.preview?.url,
-                    name: message.preview?.name
-                  });
-                  if (message.preview?.url && message.preview?.name) {
-                    handleDownload(message.preview.url, message.preview.name);
-                  } else {
-                    console.error('❌ Missing URL or filename:', message.preview);
-                    toast.error('Download information is missing');
-                  }
-                }}
-                title="Download file"
-              >
-                <Download className="h-5 w-5" />
-              </Button>
-            </div>
-          )
-        ) : (
-          <p className="text-[#e9edef]">{message.content}</p>
-        )}
-        <div className="flex items-center justify-end gap-1 mt-1">
-          <span className="text-xs text-[#8696a0]">{message.time}</span>
-          {!isAdmin && message.status && (
-            <Check
-              className={`h-4 w-4 ${
-                message.status === "read" ? "text-[#53bdeb]" : "text-[#8696a0]"
-              }`}
-            />
-          )}
-        </div>
+    <div className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}>
+      <div className={`max-w-[65%] rounded-lg px-4 py-2 ${message.isUser ? "bg-[#005c4b]" : "bg-sidebar"}`}>
+        {renderContent()}
+        <span className="text-xs text-muted-foreground float-right mt-1">{formattedTime}</span>
       </div>
     </div>
-  );
+  )
 }
+

@@ -1,87 +1,137 @@
-"use client";
+"use client"
 
-import { Camera } from "lucide-react";
-import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import Image from "next/image";
-import { UserProfile, initialAdminProfile } from "@/lib/types";
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Camera } from "lucide-react"
+import { BaseDialog } from "@/components/shared/base-dialog"
+import type React from "react"
+
+// EJEMPLO: tu default avatar
+const DEFAULT_AVATAR =
+  "https://firebasestorage.googleapis.com/v0/b/..."
+
+interface ProfileData {
+  name: string
+  avatar: string
+  phoneNumber: string
+  photoURL?: string
+}
 
 interface UserProfileDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  profile: UserProfile;
-  onProfileUpdate: (profile: UserProfile) => void;
+  profile: ProfileData
+  onUpdate: (newName: string, newAvatar: string, photoURL?: string) => void
+  children: React.ReactNode
 }
 
-export function UserProfileDialog({
-  open,
-  onOpenChange,
-  profile = initialAdminProfile,
-  onProfileUpdate,
-}: UserProfileDialogProps) {
-  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      onProfileUpdate({ ...profile, image: url });
+/** 
+ * Función local para simular guardado en la DB. 
+ * Ajusta según tu Firestore (updateDoc, setDoc, etc.).
+ */
+async function updateUserProfileDB(
+  phoneNumber: string,
+  newData: { name: string; avatar: string }
+) {
+  console.log("[updateUserProfileDB] Save to Firestore =>", phoneNumber, newData)
+  // Realmente harías algo como:
+  // const docRef = doc(db, "users", phoneNumber)
+  // await updateDoc(docRef, { name: newData.name, avatar: newData.avatar })
+  // ...
+}
+
+export function UserProfileDialog({ profile, onUpdate, children }: UserProfileDialogProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [name, setName] = useState(profile.name)
+  const [avatar, setAvatar] = useState(profile.photoURL || profile.avatar)
+
+  // Manejo de archivo local
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader()
+      reader.onload = (evt) => {
+        if (evt.target?.result) {
+          setAvatar(evt.target.result as string)
+        }
+      }
+      reader.readAsDataURL(e.target.files[0])
     }
-  };
+  }
+
+  // Al presionar “Save”
+  const handleSave = async () => {
+    try {
+      // 1) Guardar en la DB
+      await updateUserProfileDB(profile.phoneNumber, { name, avatar })
+      // 2) Avisar al padre
+      onUpdate(name, avatar, profile.photoURL)
+      // 3) Cerrar
+      setIsOpen(false)
+    } catch (error) {
+      console.error("[UserProfileDialog] Error al guardar:", error)
+      // Muestra un toast o algo
+    }
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#222e35] text-[#e9edef] border-none max-w-[90vw] sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Profile Settings</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-24 w-24 sm:h-32 sm:w-32">
-                <Image
-                  src={profile.image}
-                  alt="Profile"
-                  width={128}
-                  height={128}
-                  className="rounded-full"
-                />
-              </Avatar>
-              <label className="absolute bottom-0 right-0 bg-[#00a884] p-2 rounded-full cursor-pointer">
-                <Camera className="h-5 w-5 text-white" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleProfileImageChange}
-                />
-              </label>
-            </div>
-          </div>
+    <>
+      <div onClick={() => setIsOpen(true)}>
+        {children}
+      </div>
 
-          <div>
-            <label className="text-sm text-[#8696a0]">Your Name</label>
-            <Input
-              value={profile.name}
-              onChange={(e) => onProfileUpdate({ ...profile, name: e.target.value })}
-              placeholder="Enter your name"
-              className="bg-[#2a3942] border-none text-[#d1d7db]"
-            />
+      <BaseDialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title="Profile Settings"
+      >
+        <div className="flex justify-center mb-4">
+          <div className="relative">
+            <Avatar className="h-32 w-32">
+              <AvatarImage src={avatar || DEFAULT_AVATAR} />
+              <AvatarFallback>{name.slice(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <label
+              htmlFor="avatar-upload"
+              className="absolute bottom-0 right-0 bg-[#00a884] rounded-full p-2 cursor-pointer hover:bg-[#02906f]"
+            >
+              <Camera className="h-5 w-5 text-white" />
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </label>
           </div>
-
-          <p className="text-sm text-[#8696a0]">
-            This is not your username or pin. This name will be visible to your WhatsApp contacts.
-          </p>
         </div>
-        <DialogFooter>
-          <Button
-            onClick={() => onOpenChange(false)}
-            className="bg-[#00a884] hover:bg-[#02906f] text-white"
-          >
-            Save
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+
+        <div className="space-y-2 mb-4">
+          <label className="text-xs text-[#8696a0] uppercase">Your Name</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="bg-[#2a3942] border-0 text-[#d1d7db] placeholder:text-[#8696a0] focus-visible:ring-0"
+          />
+        </div>
+
+        <div className="space-y-2 mb-4">
+          <label className="text-xs text-[#8696a0] uppercase">Phone Number</label>
+          <Input
+            value={profile.phoneNumber}
+            readOnly
+            className="bg-[#2a3942] border-0 text-[#d1d7db] focus-visible:ring-0"
+          />
+        </div>
+
+        <Button
+          onClick={handleSave}
+          className="w-full bg-[#00a884] hover:bg-[#02906f] text-white"
+        >
+          Save
+        </Button>
+      </BaseDialog>
+    </>
+  )
 }
+

@@ -1,52 +1,54 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import { FirebaseProvider } from '@/components/providers/firebase-provider';
+import "./globals.css"
+import { Inter } from "next/font/google"
+import { AppProvider } from "@/contexts/AppContext"
+import type { Metadata, Viewport } from "next"
+import type React from "react"
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] })
 
+// (1) Separamos lo que antes estaba en metadata.viewport
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  interactiveWidget: 'resizes-visual'
+}
+
+// (2) Dejamos el resto de metadata como estaba
 export const metadata: Metadata = {
-  title: 'WhatsApp Web',
-  description: 'WhatsApp Web - Envía y recibe mensajes sin mantener tu teléfono conectado.',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: 'cover'
-  },
+  title: "Carga tus fichas",
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: 'WhatsApp',
+    statusBarStyle: "default",
+    title: "Carga tus fichas",
   },
   icons: {
-    icon: 'https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=6ae5f450-b780-41ea-acc2-23905455e703',
-    shortcut: 'https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=6ae5f450-b780-41ea-acc2-23905455e703',
-    apple: 'https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=6ae5f450-b780-41ea-acc2-23905455e703',
+    icon: "https://firebasestorage.googleapis.com/v0/b/cargatusfichas2.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=b5607c23-a39a-409d-ba88-64969459e739",
+    shortcut:
+      "https://firebasestorage.googleapis.com/v0/b/cargatusfichas2.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=b5607c23-a39a-409d-ba88-64969459e739",
+    apple:
+      "https://firebasestorage.googleapis.com/v0/b/cargatusfichas2.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=b5607c23-a39a-409d-ba88-64969459e739",
     other: {
-      rel: 'apple-touch-icon',
-      url: 'https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=6ae5f450-b780-41ea-acc2-23905455e703',
+      rel: "apple-touch-icon",
+      url: "https://firebasestorage.googleapis.com/v0/b/cargatusfichas2.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=b5607c23-a39a-409d-ba88-64969459e739",
     },
-  }
-};
+  },
+}
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function RootLayoutContent({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className="overscroll-y-none">
-      <head>
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="theme-color" content="#202c33" />
-        <link rel="apple-touch-startup-image" href="https://firebasestorage.googleapis.com/v0/b/cargatusfichas.firebasestorage.app/o/admin%2Ffavicon.png?alt=media&token=6ae5f450-b780-41ea-acc2-23905455e703" />
-      </head>
-      <body className={`${inter.className} safe-top`}>
-        <FirebaseProvider>{children}</FirebaseProvider>
+    <html lang="en">
+           <body className={`${inter.className} bg-[#111b21]`}>
+        <AppProvider>
+          <RootLayoutContent>{children}</RootLayoutContent>
+        </AppProvider>
       </body>
     </html>
-  );
+  )
 }
+
